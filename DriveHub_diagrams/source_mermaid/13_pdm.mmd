@@ -1,0 +1,109 @@
+erDiagram
+  tenants {
+    uuid id PK
+    varchar name
+    varchar tax_no UK
+    varchar plan
+    boolean is_active
+    timestamptz created_at
+  }
+  users {
+    uuid id PK
+    uuid tenant_id FK
+    varchar email UK
+    varchar password_hash
+    varchar role
+    varchar full_name
+    boolean is_active
+    timestamptz created_at
+  }
+  vehicles {
+    uuid id PK
+    uuid tenant_id FK
+    char vin "17 chars"
+    varchar make
+    varchar model
+    smallint model_year
+    integer mileage_km
+    varchar status
+    timestamptz created_at
+  }
+  inspections {
+    uuid id PK
+    uuid tenant_id FK
+    uuid vehicle_id FK
+    uuid inspector_id FK
+    varchar status
+    text notes
+    timestamptz submitted_at
+    timestamptz finalized_at
+  }
+  media_assets {
+    uuid id PK
+    uuid tenant_id FK
+    uuid inspection_id FK
+    varchar storage_key
+    varchar angle
+    integer size_bytes
+    boolean upload_complete
+  }
+  damage_detections {
+    uuid id PK
+    uuid tenant_id FK
+    uuid media_asset_id FK
+    varchar damage_type
+    numeric confidence "0-1"
+    jsonb bbox
+    boolean confirmed
+  }
+  valuations {
+    uuid id PK
+    uuid tenant_id FK
+    uuid vehicle_id FK
+    uuid inspection_id FK
+    numeric suggested_price
+    numeric min_price
+    numeric max_price
+    varchar model_version
+    timestamptz created_at
+  }
+  auctions {
+    uuid id PK
+    uuid tenant_id FK
+    uuid vehicle_id FK
+    numeric start_price
+    numeric reserve_price
+    numeric min_increment
+    timestamptz starts_at
+    timestamptz ends_at
+    varchar status
+  }
+  bids {
+    uuid id PK
+    uuid auction_id FK
+    uuid bidder_id FK
+    uuid bidder_tenant_id FK
+    numeric amount
+    bigint sequence_no
+    varchar status
+    timestamptz created_at
+  }
+  sales {
+    uuid id PK
+    uuid auction_id FK
+    uuid winning_bid_id FK
+    numeric final_price
+    varchar handover_pdf_key
+    timestamptz sold_at
+  }
+  tenants ||--|{ users : ""
+  tenants ||--o{ vehicles : ""
+  vehicles ||--o{ inspections : ""
+  users ||--o{ inspections : ""
+  inspections ||--|{ media_assets : ""
+  media_assets ||--o{ damage_detections : ""
+  vehicles ||--o{ valuations : ""
+  vehicles ||--o{ auctions : ""
+  auctions ||--o{ bids : ""
+  users ||--o{ bids : ""
+  auctions ||--o| sales : ""

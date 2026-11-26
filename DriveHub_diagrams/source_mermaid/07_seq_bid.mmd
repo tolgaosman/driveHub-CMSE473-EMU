@@ -1,0 +1,26 @@
+sequenceDiagram
+  autonumber
+  actor D as Dealer (Next.js)
+  participant WS as WebSocket Gateway
+  participant AS as Auction Service
+  participant R as Redis
+  participant PG as PostgreSQL
+  actor O as Other Bidders
+  D->>WS: CONNECT wss://…/auctions/{id} (JWT)
+  WS->>AS: verify token, tenant, role = DEALER
+  AS->>R: GET auction:{id}:state
+  R-->>AS: highest bid, end time
+  AS-->>D: AUCTION_STATE
+  D->>WS: PLACE_BID {auctionId, amount, clientTs}
+  WS->>AS: forward bid
+  AS->>R: EVALSHA place_bid.lua (atomic check-and-set)
+  alt bid valid and highest
+    R-->>AS: ACCEPTED (new highest, seq no.)
+    AS-)PG: async insert into bids (audit log)
+    AS-->>D: BID_ACCEPTED
+    AS-->>O: NEW_HIGHEST_BID broadcast
+  else too low / closed / duplicate
+    R-->>AS: REJECTED (reason)
+    AS-->>D: BID_REJECTED {reason}
+  end
+  Note over AS,R: Steps 7–9 (server-side bid processing) must complete in < 15 ms (p99)

@@ -1,0 +1,23 @@
+sequenceDiagram
+  autonumber
+  actor U as User (Mobile / Web)
+  participant GW as API Gateway
+  participant IAM as Identity & Tenant Service
+  participant PG as PostgreSQL
+  participant RD as Redis
+  U->>GW: POST /auth/login {email, password}
+  GW->>RD: rate-limit check (IP + email)
+  GW->>IAM: authenticate(email, password)
+  IAM->>PG: SELECT user, tenant, role WHERE email
+  PG-->>IAM: user row (bcrypt hash)
+  alt valid credentials and active tenant
+    IAM->>IAM: verify bcrypt hash, check 2FA for managers
+    IAM->>PG: INSERT audit_log (LOGIN_SUCCESS)
+    IAM-->>GW: access JWT (15 min) + refresh token (7 days)<br/>claims: sub, tenant_id, role
+    GW-->>U: 200 OK + tokens
+  else invalid
+    IAM->>PG: INSERT audit_log (LOGIN_FAILED)
+    IAM-->>GW: 401
+    GW-->>U: 401 "Invalid email or password"
+  end
+  Note over GW,IAM: Every later request: Gateway verifies JWT signature,<br/>injects tenant_id into the query context (RBAC guard)

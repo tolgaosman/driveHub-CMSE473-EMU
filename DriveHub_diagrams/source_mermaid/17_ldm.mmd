@@ -1,0 +1,114 @@
+erDiagram
+  TENANT {
+    ID id PK
+    Text name
+    Text tax_no
+    Text plan
+    Boolean is_active
+  }
+  USER {
+    ID id PK
+    ID tenant_id FK
+    Text email
+    Text role
+    Text full_name
+  }
+  VEHICLE {
+    ID id PK
+    ID tenant_id FK
+    Text vin
+    Text make
+    Text model
+    Integer model_year
+    Integer mileage_km
+    Text status
+  }
+  INSPECTION {
+    ID id PK
+    ID tenant_id FK
+    ID vehicle_id FK
+    ID inspector_id FK
+    Text status
+    DateTime submitted_at
+  }
+  MEDIA_ASSET {
+    ID id PK
+    ID inspection_id FK
+    Text storage_key
+    Text angle
+    Boolean upload_complete
+  }
+  DAMAGE_DETECTION {
+    ID id PK
+    ID media_asset_id FK
+    Text damage_type
+    Decimal confidence
+    JSON bbox
+    Boolean confirmed
+  }
+  VALUATION {
+    ID id PK
+    ID vehicle_id FK
+    ID inspection_id FK
+    Money suggested_price
+    Money min_price
+    Money max_price
+  }
+  AUCTION {
+    ID id PK
+    ID tenant_id FK
+    ID vehicle_id FK
+    Money start_price
+    Money reserve_price
+    Text min_increment
+    DateTime starts_at
+    DateTime ends_at
+    Text status
+  }
+  BID {
+    ID id PK
+    ID auction_id FK
+    ID bidder_id FK
+    Money amount
+    Integer sequence_no
+    Text status
+  }
+  SALE {
+    ID id PK
+    ID auction_id FK
+    ID winning_bid_id FK
+    Money final_price
+    DateTime sold_at
+  }
+  VIN_CACHE {
+    Text vin PK
+    Text make
+    Text model
+    Integer model_year
+    Text body
+    Text engine
+    DateTime fetched_at
+  }
+  AUDIT_LOG {
+    ID id PK
+    ID tenant_id FK
+    ID user_id FK
+    Text action
+    Text entity
+    ID entity_id
+    DateTime created_at
+  }
+  TENANT ||--|{ USER : has
+  TENANT ||--o{ VEHICLE : owns
+  VEHICLE ||--o{ INSPECTION : has
+  USER ||--o{ INSPECTION : performs
+  INSPECTION ||--|{ MEDIA_ASSET : contains
+  MEDIA_ASSET ||--o{ DAMAGE_DETECTION : shows
+  VEHICLE ||--o{ VALUATION : has
+  INSPECTION |o--o| VALUATION : informs
+  VEHICLE ||--o{ AUCTION : "listed in"
+  AUCTION ||--o{ BID : receives
+  USER ||--o{ BID : places
+  AUCTION ||--o| SALE : "results in"
+  VIN_CACHE ||--o{ VEHICLE : decodes
+  USER ||--o{ AUDIT_LOG : generates

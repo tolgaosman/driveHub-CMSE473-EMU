@@ -1,0 +1,22 @@
+digraph DP {
+graph [fontname="Arial" fontsize=12 bgcolor="white" pad=0.2 nodesep=0.35 ranksep=0.45 rankdir=TB splines=spline compound=true nodesep=0.3 ranksep=0.7];
+node [fontname="Arial" fontsize=11 style="filled" fillcolor="#EEF3FA" color="#3B5B85" penwidth=1.2];
+edge [fontname="Arial" fontsize=9.5 color="#4A4A4A" arrowsize=0.7];
+
+node [shape=component fillcolor="#EEF3FA" fontsize=10];
+subgraph cluster_dev {label="«device» Client devices" style="rounded" color="#555555";
+  ph [shape=box3d label="Android phone\nDriveHub Inspector"]; br [shape=box3d label="Web browser\nNext.js dashboard"]; }
+subgraph cluster_vm {label="«node» Oracle Cloud Always-Free VM\nARM · 2 OCPU · 12 GB · Docker Compose" style="rounded" color="#555555";
+  ng [label="nginx"]; c1 [label="api-gateway"]; c2 [label="identity · vehicles ·\nvin-decoder · reporting"]; c3 [label="auctions +\nws-gateway"];
+  c4 [label="valuation"]; c5 [label="web (Next.js)"];
+  db [shape=cylinder fillcolor="#E8F5E9" label="postgres +\ntimescaledb"]; rs [shape=cylinder fillcolor="#E8F5E9" label="redis (AOF)"]; }
+subgraph cluster_gpu {label="«node» Team GPU workstation\nRTX 4060 8 GB · CUDA" style="rounded" color="#555555";
+  c6 [label="ai-inspection\n(PyTorch, YOLO)"]; }
+r2 [shape=cylinder fillcolor="#E8F5E9" label="Cloudflare R2\nobject storage"];
+gh [shape=box label="GitHub Actions\nCI/CD"];
+ph -> ng [label="HTTPS"]; br -> ng [label="HTTPS / WSS"];
+ng -> c1; ng -> c3; ng -> c5; c1 -> c2; c1 -> c4; c2 -> db; c3 -> db; c3 -> rs; c4 -> db; c2 -> rs;
+rs -> c6 [label="Streams over\nWireGuard VPN" dir=both];
+ph -> r2 [label="pre-signed upload" style=dashed]; c6 -> r2; c2 -> r2;
+gh -> c1 [label="deploy images" style=dotted lhead=cluster_vm];
+}

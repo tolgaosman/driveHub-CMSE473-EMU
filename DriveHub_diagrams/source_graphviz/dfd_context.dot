@@ -1,0 +1,22 @@
+digraph C {
+graph [fontname="Arial" fontsize=12 bgcolor="white" pad=0.2 nodesep=0.35 ranksep=0.45 rankdir=LR splines=spline ranksep=1.3 nodesep=0.5];
+node [fontname="Arial" fontsize=11 style="filled" fillcolor="#EEF3FA" color="#3B5B85" penwidth=1.2];
+edge [fontname="Arial" fontsize=9.5 color="#4A4A4A" arrowsize=0.7];
+
+node [shape=box fillcolor="#FFF8E1" color="#8D6E00"];
+ins [label="Field Inspector"]; mgr [label="Gallery Manager"]; adm [label="Platform\nAdministrator"];
+dlr [label="Dealer / Bidder"]; vin [label="External VIN\nRegistry"]; sto [label="Object Storage\nProvider"];
+p0 [shape=circle width=1.8 fixedsize=true fillcolor="#EEF3FA" color="#3B5B85" label="0\nDriveHub\nPlatform"];
+ins -> p0 [label="VIN, photos,\ninspection notes"];
+p0 -> ins [label="decoded vehicle data,\nAI damage report"];
+mgr -> p0 [label="auction settings, reserve,\nprice overrides, users"];
+p0 -> mgr [label="inventory, valuations,\nreports"];
+adm -> p0 [label="tenant setup,\nconfiguration"];
+p0 -> adm [label="audit logs,\nsystem health"];
+p0 -> dlr [label="listings, live bid updates,\nauction result"];
+dlr -> p0 [label="credentials, bids"];
+p0 -> vin [label="VIN query"]; vin -> p0 [label="make, model,\nyear, specs"];
+p0 -> sto [label="media files"]; sto -> p0 [label="object URLs"];
+{rank=same; ins; mgr; adm}
+{rank=same; dlr; vin; sto}
+}

@@ -1,0 +1,20 @@
+sequenceDiagram
+  autonumber
+  actor I as Inspector
+  participant GW as API Gateway
+  participant VIN as VIN Decoder Service
+  participant PG as PostgreSQL (vin_cache)
+  participant EXT as External VIN API
+  I->>GW: GET /vin/{vin}
+  GW->>GW: validate JWT + role INSPECTOR
+  GW->>VIN: decode(vin)
+  VIN->>VIN: validate format & check digit
+  VIN->>PG: SELECT from vin_cache
+  alt cache hit
+    PG-->>VIN: decoded specs
+  else cache miss
+    VIN->>EXT: HTTPS decode request
+    EXT-->>VIN: make, model, year, body, engine
+    VIN->>PG: INSERT into vin_cache
+  end
+  VIN-->>I: decoded vehicle data (pre-fills form)

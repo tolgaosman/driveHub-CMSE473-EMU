@@ -1,0 +1,30 @@
+digraph L0 {
+graph [fontname="Arial" fontsize=12 bgcolor="white" pad=0.2 nodesep=0.35 ranksep=0.45 rankdir=TB splines=spline nodesep=0.5 ranksep=0.6];
+node [fontname="Arial" fontsize=11 style="filled" fillcolor="#EEF3FA" color="#3B5B85" penwidth=1.2];
+edge [fontname="Arial" fontsize=9.5 color="#4A4A4A" arrowsize=0.7];
+
+node [shape=circle width=1.35 fixedsize=true];
+p1 [label="1.0\nAuthenticate\n& Authorize"]; p2 [label="2.0\nRegister Vehicle\n& Decode VIN"];
+p3 [label="3.0\nCapture &\nUpload Media"]; p4 [label="4.0\nDetect\nDamage (AI)"];
+p5 [label="5.0\nEstimate\nValuation"]; p6 [label="6.0\nRun Live\nAuction"]; p7 [label="7.0\nGenerate\nReports"];
+node [shape=box fixedsize=false width=0 fillcolor="#FFF8E1" color="#8D6E00"];
+ins [label="Field Inspector"]; mgr [label="Gallery Manager"]; dlr [label="Dealer / Bidder"]; ext [label="External VIN Registry"];
+node [shape=record fillcolor="#E8F5E9" color="#2E7D32"];
+d1 [label="D1 | Users & Tenants"]; d2 [label="D2 | Vehicles"]; d3 [label="D3 | Media Objects"];
+d4 [label="D4 | Inspections & Damages"]; d5 [label="D5 | Valuations & Market Data"];
+d6 [label="D6 | Auctions & Bids"]; d7 [label="D7 | Live Auction State (Redis)"];
+{rank=same; ins; mgr; dlr}
+ins -> p1 [label="credentials"]; mgr -> p1; dlr -> p1;
+p1 -> d1 [dir=both label="user, role"];
+ins -> p2 [label="VIN, mileage"]; p2 -> ext [label="VIN query"]; ext -> p2 [label="specs"];
+p2 -> d2 [label="vehicle record"];
+ins -> p3 [label="photos (chunked)"]; p3 -> d3 [label="media keys"];
+p3 -> p4 [label="inspection request"]; d3 -> p4 [label="images"];
+p4 -> d4 [label="damages"]; p4 -> ins [label="damage report" constraint=false];
+d2 -> p5 [label="attributes"]; d4 -> p5 [label="damage summary"]; d5 -> p5 [label="market stats"];
+p5 -> d5 [label="valuation"];
+mgr -> p6 [label="auction settings"]; dlr -> p6 [label="bids"];
+p6 -> d7 [dir=both label="state"]; p6 -> d6 [label="results, bid log"];
+p6 -> dlr [label="accept / reject,\nstatus" constraint=false];
+d6 -> p7; d5 -> p7; d2 -> p7; p7 -> mgr [label="KPIs, reports" constraint=false];
+}

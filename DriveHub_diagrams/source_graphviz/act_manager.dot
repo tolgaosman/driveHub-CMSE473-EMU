@@ -1,0 +1,22 @@
+digraph AM {
+graph [fontname="Arial" fontsize=12 bgcolor="white" pad=0.2 nodesep=0.35 ranksep=0.45 rankdir=TB splines=ortho nodesep=0.4 ranksep=0.32];
+node [fontname="Arial" fontsize=11 style="filled" fillcolor="#EEF3FA" color="#3B5B85" penwidth=1.2];
+edge [fontname="Arial" fontsize=9.5 color="#4A4A4A" arrowsize=0.7];
+
+node [shape=box style="rounded,filled"];
+s [shape=circle width=0.25 fixedsize=true label="" fillcolor=black];
+e [shape=doublecircle width=0.22 fixedsize=true label="" fillcolor=black];
+
+m1 [label="Log in to web dashboard"]; m2 [label="Filter inventory, open vehicle"];
+m3 [label="Review AI report and suggested price"];
+k1 [shape=diamond label="Accept\nprice?" width=1.1 height=0.7 fixedsize=true];
+m4 [label="Override price\n(reason required)"];
+k2 [shape=diamond label="Sell by\nauction?" width=1.1 height=0.7 fixedsize=true];
+m5 [label="Keep in retail stock"];
+m6 [label="Set start, reserve, increment, times"];
+m7 [label="Publish auction (SCHEDULED)"];
+m8 [label="Monitor live room and view result"];
+s -> m1 -> m2 -> m3 -> k1; k1 -> m4 [xlabel="no"]; m4 -> k2; k1 -> k2 [xlabel="yes"];
+k2 -> m5 [xlabel="no"]; m5 -> e; k2 -> m6 [xlabel="yes"]; m6 -> m7 -> m8 -> e;
+{rank=same; k1; m4} {rank=same; k2; m5}
+}

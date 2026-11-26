@@ -1,0 +1,27 @@
+digraph AB {
+graph [fontname="Arial" fontsize=12 bgcolor="white" pad=0.2 nodesep=0.35 ranksep=0.45 rankdir=TB splines=ortho nodesep=0.4 ranksep=0.32];
+node [fontname="Arial" fontsize=11 style="filled" fillcolor="#EEF3FA" color="#3B5B85" penwidth=1.2];
+edge [fontname="Arial" fontsize=9.5 color="#4A4A4A" arrowsize=0.7];
+
+node [shape=box style="rounded,filled"];
+s [shape=circle width=0.25 fixedsize=true label="" fillcolor=black];
+e [shape=doublecircle width=0.22 fixedsize=true label="" fillcolor=black];
+
+c1 [shape=diamond label="Auction\nopen?" width=1.1 height=0.7 fixedsize=true];
+c2 [shape=diamond label="Bid ≥ highest\n+ increment?" width=1.5 height=0.8 fixedsize=true];
+c3 [shape=diamond label="Timer\nexpired?" width=1.1 height=0.7 fixedsize=true];
+c4 [shape=diamond label="Highest ≥\nreserve?" width=1.2 height=0.75 fixedsize=true];
+b1 [label="Join live auction room (WSS + JWT)"];
+b2 [label="Receive current state and AI report"];
+b3 [label="Submit bid"];
+b4 [label="Atomic Lua script in Redis"];
+b5 [label="Reject bid\n(notify bidder only)"];
+b6 [label="Store new highest bid,\nextend time if < 30 s left"];
+b7 [label="Broadcast NEW_HIGHEST_BID"];
+b8 [label="Mark SOLD, notify\nwinner and seller"]; b9 [label="Mark NOT SOLD,\nnotify seller"];
+s -> b1 -> b2 -> b3 -> b4 -> c1; c1 -> b5 [xlabel="no"]; c1 -> c2 [xlabel="yes"];
+c2 -> b5 [xlabel="no"]; c2 -> b6 [xlabel="yes"]; b6 -> b7 -> c3; b5 -> c3;
+c3 -> b3 [xlabel="no"]; c3 -> c4 [xlabel="yes"]; c4 -> b8 [xlabel="yes"]; c4 -> b9 [xlabel="no"];
+b8 -> e; b9 -> e;
+{rank=same; c2; b5} {rank=same; b8; b9}
+}

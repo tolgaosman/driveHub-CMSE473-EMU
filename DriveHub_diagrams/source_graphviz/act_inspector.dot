@@ -1,0 +1,26 @@
+digraph AI {
+graph [fontname="Arial" fontsize=12 bgcolor="white" pad=0.2 nodesep=0.35 ranksep=0.45 rankdir=TB splines=ortho nodesep=0.4 ranksep=0.32];
+node [fontname="Arial" fontsize=11 style="filled" fillcolor="#EEF3FA" color="#3B5B85" penwidth=1.2];
+edge [fontname="Arial" fontsize=9.5 color="#4A4A4A" arrowsize=0.7];
+
+node [shape=box style="rounded,filled"];
+s [shape=circle width=0.25 fixedsize=true label="" fillcolor=black];
+e [shape=doublecircle width=0.22 fixedsize=true label="" fillcolor=black];
+
+d1 [shape=diamond label="VIN\nvalid?" width=1.1 height=0.7 fixedsize=true];
+d2 [shape=diamond label="Online?" width=1.1 height=0.7 fixedsize=true];
+d3 [shape=diamond label="Agree with\nAI result?" width=1.3 height=0.8 fixedsize=true];
+a1 [label="Log in to mobile app"]; a2 [label="Scan / enter VIN"];
+a3 [label="Decode VIN, create or open vehicle record"];
+a4 [label="Enter mileage, notes and checklist"];
+a5 [label="Capture required photo set (8 angles)"];
+a6 [label="Queue chunks locally,\nretry with back-off"];
+a7 [label="Upload chunks and submit inspection"];
+a8 [label="AI detects damage; valuation computed"];
+a9 [label="Correct detections /\nadd manual damage"];
+a10 [label="Finalize inspection report"];
+s -> a1 -> a2 -> d1; d1 -> a2 [xlabel="no"]; d1 -> a3 [xlabel="yes"];
+a3 -> a4 -> a5 -> d2; d2 -> a6 [xlabel="no"]; a6 -> d2; d2 -> a7 [xlabel="yes"];
+a7 -> a8 -> d3; d3 -> a9 [xlabel="no"]; a9 -> a10; d3 -> a10 [xlabel="yes"]; a10 -> e;
+{rank=same; d2; a6} {rank=same; d3; a9}
+}

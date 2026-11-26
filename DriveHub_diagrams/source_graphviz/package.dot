@@ -1,0 +1,21 @@
+digraph PK {
+graph [fontname="Arial" fontsize=12 bgcolor="white" pad=0.2 nodesep=0.35 ranksep=0.45 rankdir=TB splines=spline compound=true nodesep=0.3 ranksep=0.5];
+node [fontname="Arial" fontsize=11 style="filled" fillcolor="#EEF3FA" color="#3B5B85" penwidth=1.2];
+edge [fontname="Arial" fontsize=9.5 color="#4A4A4A" arrowsize=0.7];
+
+node [shape=tab fillcolor="#EEF3FA" fontsize=10];
+subgraph cluster_p {label="«layer» Presentation" style="rounded" color="#3B5B85";
+  p1 [label="mobile-inspector\n(React Native)"]; p2 [label="web-dashboard\n(Next.js)"]; p3 [label="shared-ui\n(design system)"]; }
+subgraph cluster_a {label="«layer» API & Real-time" style="rounded" color="#3B5B85";
+  a1 [label="api-gateway"]; a2 [label="ws-gateway"]; a3 [label="contracts\n(OpenAPI, WS schemas)"]; }
+subgraph cluster_b {label="«layer» Business Services" style="rounded" color="#3B5B85";
+  b1 [label="identity"]; b2 [label="vehicles"]; b3 [label="vin-decoder"]; b4 [label="auctions"];
+  b5 [label="ai-inspection\n(Python)"]; b6 [label="valuation\n(Python)"]; b7 [label="reporting"]; }
+subgraph cluster_d {label="«layer» Data & Infrastructure" style="rounded" color="#3B5B85";
+  d1 [label="persistence\n(Prisma/TypeORM\nmigrations)"]; d2 [label="cache-queue\n(Redis client)"]; d3 [label="storage\n(S3 client)"]; d4 [label="common\n(auth guards, logging,\ntenant context)"]; }
+edge [style=dashed arrowhead=open label="«use»" fontsize=8];
+p1 -> a1; p2 -> a1; p2 -> a2; p1 -> p3 [label=""]; p2 -> p3 [label=""];
+a1 -> b1 [lhead=cluster_b]; a2 -> b4;
+b2 -> d1 [lhead=cluster_d ltail=cluster_b];
+a1 -> a3 [label=""]; a2 -> a3 [label=""];
+}

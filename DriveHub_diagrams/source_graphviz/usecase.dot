@@ -1,0 +1,39 @@
+digraph UC {
+graph [fontname="Arial" fontsize=12 bgcolor="white" pad=0.2 nodesep=0.35 ranksep=0.45 rankdir=LR splines=spline nodesep=0.14 ranksep=0.7 newrank=true];
+node [fontname="Arial" fontsize=11 style="filled" fillcolor="#EEF3FA" color="#3B5B85" penwidth=1.2];
+edge [fontname="Arial" fontsize=9.5 color="#4A4A4A" arrowsize=0.7];
+
+node [shape=ellipse fillcolor="#EEF3FA" fontsize=10];
+subgraph cluster_sys { label="DriveHub Platform" style="rounded" color="#3B5B85" fontsize=13;
+ uc1 [label="UC1 Log In (RBAC)"]; uc2 [label="UC2 Register Vehicle by VIN"]; uc3 [label="UC3 Decode VIN"];
+ uc4 [label="UC4 Capture & Upload Photos"]; uc5 [label="UC5 Run AI Damage Detection"];
+ uc6 [label="UC6 Review AI Report"]; uc7 [label="UC7 Calculate Valuation"];
+ uc8 [label="UC8 Manage Inventory"]; uc9 [label="UC9 Override Price"]; uc10 [label="UC10 Schedule Auction"];
+ uc11 [label="UC11 Manage Users & Roles"]; uc12 [label="UC12 View Reports & KPIs"];
+ uc13 [label="UC13 Browse Auctions"]; uc14 [label="UC14 Join Live Auction"]; uc15 [label="UC15 Place Bid"];
+ uc16 [label="UC16 Validate Bid Atomically"]; uc17 [label="UC17 Close Auction & Settle"];
+ uc18 [label="UC18 Generate Hand-over PDF"]; uc19 [label="UC19 Manage Tenants"]; uc20 [label="UC20 View Audit Logs"];
+}
+node [shape=none fillcolor=white fontsize=11 style=""];
+ins [label="Field\nInspector" image="actor.png" labelloc=b imagepos=tc imagescale=false width=1.0 height=1.45];
+mgr [label="Gallery\nManager" image="actor.png" labelloc=b imagepos=tc imagescale=false width=1.0 height=1.45];
+dlr [label="Dealer /\nBidder" image="actor.png" labelloc=b imagepos=tc imagescale=false width=1.0 height=1.45];
+adm [label="Platform\nAdmin" image="actor.png" labelloc=b imagepos=tc imagescale=false width=1.0 height=1.45];
+vin [label="«system»\nVIN Registry" image="actor.png" labelloc=b imagepos=tc imagescale=false width=1.0 height=1.45];
+tmr [label="«system»\nScheduler" image="actor.png" labelloc=b imagepos=tc imagescale=false width=1.0 height=1.45];
+edge [arrowhead=none];
+ins -> uc1; ins -> uc2; ins -> uc4; ins -> uc6;
+mgr -> uc1; mgr -> uc8; mgr -> uc9; mgr -> uc10; mgr -> uc11; mgr -> uc12;
+uc13 -> dlr; uc14 -> dlr; uc15 -> dlr; uc1 -> dlr [constraint=false];
+adm -> uc19; adm -> uc20;
+uc3 -> vin; uc17 -> tmr;
+edge [style=dashed arrowhead=open fontsize=8.5];
+uc2 -> uc3 [label="«include»"]; uc4 -> uc5 [label="«include»"]; uc5 -> uc7 [label="«include»"];
+uc15 -> uc16 [label="«include»" constraint=false]; uc14 -> uc15 [label="«extend»" dir=back arrowtail=open arrowhead=none];
+uc17 -> uc18 [label="«extend»"]; uc10 -> uc7 [label="«include»"];
+{rank=min; ins; mgr; adm}
+{rank=same; uc1; uc2; uc4; uc6; uc8; uc9; uc10; uc11; uc12; uc19; uc20}
+{rank=same; uc3; uc5; uc13; uc14; uc17}
+{rank=same; uc7; uc15; uc18; uc16}
+{rank=max; dlr; vin; tmr}
+}

@@ -1,0 +1,43 @@
+digraph A {
+graph [fontname="Arial" fontsize=12 bgcolor="white" pad=0.2 nodesep=0.35 ranksep=0.45 rankdir=TB splines=spline compound=true newrank=true nodesep=0.4 ranksep=0.55];
+node [fontname="Arial" fontsize=11 style="filled" fillcolor="#EEF3FA" color="#3B5B85" penwidth=1.2];
+edge [fontname="Arial" fontsize=9.5 color="#4A4A4A" arrowsize=0.7];
+
+subgraph cluster_c {label="Client Layer" style="rounded,dashed" color="#888888";
+  ma [shape=box style="rounded,filled" label="Inspector Mobile App\n(React Native)"];
+  wd [shape=box style="rounded,filled" label="Web Dashboard\n(Next.js · managers & dealers)"]; }
+subgraph cluster_e {label="Edge Layer" style="rounded,dashed" color="#888888";
+  ng [shape=box label="nginx reverse proxy (TLS)"];
+  gw [shape=box label="API Gateway (NestJS)\nREST/OpenAPI · JWT · RBAC · rate limit"];
+  wsg [shape=box label="WebSocket Gateway\n(RFC 6455)"]; }
+subgraph cluster_s {label="Microservice Layer" style="rounded,dashed" color="#888888";
+  iam [shape=box label="Identity &\nTenant Service"];
+  vin [shape=box label="VIN Decoder\nService"];
+  veh [shape=box label="Vehicle Inventory\nService"];
+  rep [shape=box label="Reporting &\nAnalytics Service"];
+  auc [shape=box label="Auction Service\n(atomic Lua bid scripts)"];
+  ai  [shape=box fillcolor="#FFF4E0" label="AI Inspection Service\n(Python · PyTorch · YOLO)"];
+  val [shape=box fillcolor="#FFF4E0" label="Valuation Service\n(Python · pricing model)"]; }
+subgraph cluster_d {label="Data Layer" style="rounded,dashed" color="#888888";
+  s3 [shape=cylinder fillcolor="#E8F5E9" label="Object Storage (Cloudflare R2)\nimages · annotated images · PDFs"];
+  pg [shape=cylinder fillcolor="#E8F5E9" label="PostgreSQL + TimescaleDB\n(tenant_id on every row)"];
+  rd [shape=cylinder fillcolor="#E8F5E9" label="Redis\nlive auction state · Streams queue"]; }
+ext [shape=box style="dashed" fillcolor="white" label="External VIN Registry API\n(e.g. NHTSA vPIC)"];
+{rank=same; ma; wd}
+{rank=same; gw; wsg}
+{rank=same; iam; vin; veh; rep; auc}
+{rank=same; ai; val; ext}
+{rank=same; s3; pg; rd}
+ma -> ng [label="HTTPS"]; wd -> ng [label="HTTPS / WSS"];
+ng -> gw; ng -> wsg;
+gw -> iam; gw -> vin; gw -> veh; gw -> rep;
+wsg -> auc [dir=both label="bids / events"];
+vin -> ext [label="HTTPS"];
+veh -> ai [label="inspection.requested\n(Redis Stream)" style=dashed];
+ai -> val [label="damage summary"];
+ai -> s3 [label="read / write images"];
+iam -> pg [style=invis]; veh -> pg [lhead=cluster_d ltail=cluster_s label="SQL (tenant-scoped)" penwidth=1.6];
+auc -> rd [dir=both label="atomic check-and-set"];
+val -> pg [style=invis];
+ma -> s3 [label="chunked resumable upload\n(pre-signed URLs)" style=dashed constraint=false];
+}

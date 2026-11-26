@@ -1,0 +1,16 @@
+digraph SA {
+graph [fontname="Arial" fontsize=12 bgcolor="white" pad=0.2 nodesep=0.35 ranksep=0.45 rankdir=LR splines=spline nodesep=0.5 ranksep=0.6];
+node [fontname="Arial" fontsize=11 style="filled" fillcolor="#EEF3FA" color="#3B5B85" penwidth=1.2];
+edge [fontname="Arial" fontsize=9.5 color="#4A4A4A" arrowsize=0.7];
+
+node [shape=box style="rounded,filled"];
+s [shape=circle width=0.22 fixedsize=true label="" fillcolor=black];
+e [shape=doublecircle width=0.2 fixedsize=true label="" fillcolor=black];
+dr [label="DRAFT"]; sc [label="SCHEDULED"]; lv [label="LIVE"]; ex [label="EXTENDED\n(anti-sniping)"];
+cl [label="CLOSING"]; so [label="SOLD" fillcolor="#C8E6C9"]; ns [label="NOT_SOLD" fillcolor="#FFE0B2"]; ca [label="CANCELLED" fillcolor="#FFCDD2"];
+s -> dr; dr -> sc [label="publish\n[vehicle inspected]"]; sc -> lv [label="startsAt reached"];
+lv -> lv [label="bid accepted"]; lv -> ex [label="bid in last 30 s"]; ex -> lv [label="extension\nelapsed"];
+lv -> cl [label="endsAt reached"]; cl -> so [label="[highest ≥ reserve]"]; cl -> ns [label="[no bid or\n< reserve]"];
+sc -> ca [label="manager cancels"]; dr -> ca [label="discard"];
+so -> e; ns -> e; ca -> e; ns -> dr [label="relist" style=dashed];
+}

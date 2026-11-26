@@ -1,0 +1,28 @@
+sequenceDiagram
+  autonumber
+  actor I as Inspector (Mobile)
+  participant GW as API Gateway
+  participant VS as Vehicle Service
+  participant S3 as Object Storage
+  participant Q as Redis Stream
+  participant AI as AI Inspection Service
+  participant VAL as Valuation Service
+  I->>GW: POST /inspections {vehicleId}
+  GW->>VS: create inspection (status = UPLOADING)
+  VS-->>I: inspectionId + pre-signed multipart URLs
+  loop for each photo chunk
+    I->>S3: PUT chunk (resume on failure)
+  end
+  I->>GW: POST /inspections/{id}/submit
+  GW->>VS: mark SUBMITTED
+  VS->>Q: XADD inspection.requested
+  Q-->>AI: consume message
+  AI->>S3: GET images
+  AI->>AI: YOLO inference, bounding boxes
+  AI->>S3: PUT annotated images
+  AI->>Q: XADD inspection.completed {damages}
+  Q-->>VS: store damages (status = ANALYZED)
+  VS->>VAL: POST /valuations {vehicle, damages}
+  VAL-->>VS: suggested price + confidence range
+  VS-->>I: push notification / poll → report ready
+  Note over I,AI: Inference ≤ 4 s per image

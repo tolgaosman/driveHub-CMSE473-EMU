@@ -1,0 +1,102 @@
+classDiagram
+  direction TB
+  class Tenant {
+    +UUID id
+    +String name
+    +String taxNo
+    +PlanType plan
+    +Boolean active
+    +suspend()
+  }
+  class User {
+    +UUID id
+    +UUID tenantId
+    +String email
+    -String passwordHash
+    +Role role
+    +login(email, pwd) JWT
+    +hasPermission(p) Boolean
+  }
+  class Role {
+    <<enumeration>>
+    PLATFORM_ADMIN
+    GALLERY_MANAGER
+    INSPECTOR
+    DEALER
+  }
+  class Vehicle {
+    +UUID id
+    +UUID tenantId
+    +String vin
+    +String make
+    +String model
+    +int year
+    +int mileageKm
+    +VehicleStatus status
+    +decodeVin()
+  }
+  class Inspection {
+    +UUID id
+    +UUID vehicleId
+    +UUID inspectorId
+    +InspectionStatus status
+    +DateTime submittedAt
+    +submit()
+    +finalize()
+  }
+  class MediaAsset {
+    +UUID id
+    +String storageKey
+    +String angle
+    +int sizeBytes
+    +Boolean uploadComplete
+  }
+  class DamageDetection {
+    +UUID id
+    +DamageType type
+    +float confidence
+    +BoundingBox box
+    +Boolean confirmedByInspector
+  }
+  class Valuation {
+    +UUID id
+    +Decimal suggestedPrice
+    +Decimal minPrice
+    +Decimal maxPrice
+    +String modelVersion
+    +calculate()
+  }
+  class Auction {
+    +UUID id
+    +UUID vehicleId
+    +Decimal startPrice
+    +Decimal reservePrice
+    +Decimal minIncrement
+    +DateTime startsAt
+    +DateTime endsAt
+    +AuctionStatus status
+    +open()
+    +close()
+    +placeBid(bid) BidResult
+  }
+  class Bid {
+    +UUID id
+    +UUID auctionId
+    +UUID bidderId
+    +Decimal amount
+    +long sequenceNo
+    +BidStatus status
+    +DateTime createdAt
+  }
+  Tenant "1" *-- "many" User
+  Tenant "1" *-- "many" Vehicle
+  User --> Role
+  Vehicle "1" o-- "many" Inspection
+  Inspection "1" *-- "many" MediaAsset
+  MediaAsset "1" *-- "many" DamageDetection
+  Vehicle "1" o-- "many" Valuation
+  Valuation ..> Inspection : uses
+  Vehicle "1" o-- "0..*" Auction
+  Auction "1" *-- "many" Bid
+  User "1" --> "many" Bid : places
+  User "1" --> "many" Inspection : performs

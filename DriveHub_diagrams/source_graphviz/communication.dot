@@ -1,0 +1,15 @@
+digraph CM {
+graph [fontname="Arial" fontsize=12 bgcolor="white" pad=0.2 nodesep=0.35 ranksep=0.45 rankdir=LR splines=spline nodesep=0.6 ranksep=1.2];
+node [fontname="Arial" fontsize=11 style="filled" fillcolor="#EEF3FA" color="#3B5B85" penwidth=1.2];
+edge [fontname="Arial" fontsize=9.5 color="#4A4A4A" arrowsize=0.7];
+
+node [shape=box fontsize=11]; edge [fontsize=9.5];
+d [label=":Dealer\n(Web UI)"]; w [label=":WebSocketGateway"]; a [label=":AuctionService"]; r [label=":Redis"];
+p [label=":PostgreSQL"]; o [label=":OtherBidders\n(Web UI)"]; m [label=":GalleryManager\n(Web UI)"];
+d -> w [label="1: PLACE_BID(amount)"]; w -> a [label="1.1: placeBid(auctionId,\nuserId, amount)"];
+a -> r [label="1.2: EVALSHA place_bid.lua\n1.3: ← ACCEPTED(seq)" dir=both];
+a -> p [label="1.4: insertBid() [async]"];
+w -> d [label="1.6: BID_ACCEPTED" constraint=false];
+a -> w [label="1.5: BID_ACCEPTED" constraint=false];
+a -> o [label="1.7: NEW_HIGHEST_BID"]; a -> m [label="1.8: NEW_HIGHEST_BID"];
+}

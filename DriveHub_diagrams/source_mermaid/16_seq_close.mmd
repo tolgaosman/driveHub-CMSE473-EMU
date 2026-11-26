@@ -1,0 +1,26 @@
+sequenceDiagram
+  autonumber
+  participant SCH as Scheduler (Auction Service)
+  participant AS as Auction Service
+  participant R as Redis
+  participant PG as PostgreSQL
+  participant VS as Vehicle Service
+  participant WS as WebSocket Gateway
+  actor W as Winner
+  actor M as Gallery Manager
+  SCH->>AS: tick: endsAt reached for auction {id}
+  AS->>R: EVALSHA close_auction.lua (lock room, read final state)
+  R-->>AS: highest bid, bidder, sequence no.
+  alt highest ≥ reserve
+    AS->>PG: transaction: UPDATE auctions SET status=SOLD + INSERT sales
+    AS->>VS: vehicle status → SOLD
+    AS->>WS: AUCTION_CLOSED {result: SOLD}
+    WS-->>W: You won – hand-over PDF link
+    WS-->>M: Vehicle sold for final price
+  else no bid or below reserve
+    AS->>PG: UPDATE auctions SET status=NOT_SOLD
+    AS->>VS: vehicle status → IN_STOCK
+    AS->>WS: AUCTION_CLOSED {result: NOT_SOLD}
+    WS-->>M: Reserve not met – relist?
+  end
+  AS->>R: DEL auction:{id}:* (after 24 h TTL)

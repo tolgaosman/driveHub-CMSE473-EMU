@@ -1,0 +1,16 @@
+digraph SV {
+graph [fontname="Arial" fontsize=12 bgcolor="white" pad=0.2 nodesep=0.35 ranksep=0.45 rankdir=TB splines=spline nodesep=0.45 ranksep=0.55];
+node [fontname="Arial" fontsize=11 style="filled" fillcolor="#EEF3FA" color="#3B5B85" penwidth=1.2];
+edge [fontname="Arial" fontsize=9.5 color="#4A4A4A" arrowsize=0.7];
+
+node [shape=box style="rounded,filled"];
+s [shape=circle width=0.22 fixedsize=true label="" fillcolor=black];
+e [shape=doublecircle width=0.2 fixedsize=true label="" fillcolor=black];
+rg [label="REGISTERED"]; up [label="INSPECTION_\nUPLOADING"]; an [label="ANALYZING"]; rv [label="AWAITING_\nREVIEW"];
+ins [label="INSPECTED"]; st [label="IN_STOCK"]; ia [label="IN_AUCTION"]; sd [label="SOLD" fillcolor="#C8E6C9"]; ar [label="ARCHIVED"];
+s -> rg [label="VIN decoded"]; rg -> up [label="inspection\nstarted"]; up -> an [label="submitted"];
+an -> rv [label="AI done"]; an -> up [label="AI failed /\nretake photos" style=dashed];
+rv -> ins [label="inspector\nfinalizes"]; ins -> st [label="manager keeps"]; ins -> ia [label="auction\nscheduled"];
+ia -> st [label="not sold"]; ia -> sd [label="sold"]; st -> ia [label="auction\nscheduled"]; sd -> ar [label="after 90 days"]; ar -> e;
+{rank=same; s; rg; up; an} {rank=same; rv; ins} {rank=same; st; ia; sd; ar; e}
+}
