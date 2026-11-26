@@ -5,12 +5,24 @@ import { AlertTriangle, CalendarPlus, CheckCircle2, Radio } from 'lucide-react';
 import { Vehicle } from '@shared/contracts';
 import { useApp } from '@/context/AppContext';
 import { apiFetch } from '@/lib/api';
-import { formatMoney } from '@/lib/i18n';
+import { formatMoney, t } from '@/lib/i18n';
 import { VehicleStage } from '@/components/vehicles/VehicleStage';
+import { Select } from '@/components/ui/Select';
+import { DateTimePicker } from '@/components/ui/DateTimePicker';
+import { Button, Callout, Field, PageHeader, Panel, inputClass } from '@/components/ui/primitives';
+
+/** Next quarter hour, one hour from now. */
+function defaultStart(): Date {
+  const d = new Date(Date.now() + 60 * 60 * 1000);
+  d.setSeconds(0, 0);
+  d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15);
+  return d;
+}
 
 export const ScheduleAuctionPage: React.FC = () => {
   const {
     token,
+    lang,
     currency,
     exchangeRate,
     scheduleVehicleId,
@@ -19,6 +31,7 @@ export const ScheduleAuctionPage: React.FC = () => {
     bumpDataVersion,
     pushToast,
   } = useApp();
+  const tr = lang === 'tr';
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedId, setSelectedId] = useState<string>(scheduleVehicleId ?? 'veh-qashqai');
@@ -27,7 +40,15 @@ export const ScheduleAuctionPage: React.FC = () => {
   const [minIncrement, setMinIncrement] = useState<number>(100);
   const [durationMinutes, setDurationMinutes] = useState<number>(20);
   const [visibility, setVisibility] = useState<'ALL_VERIFIED' | 'INVITED_ONLY'>('ALL_VERIFIED');
+  const [startsAt, setStartsAt] = useState<Date>(defaultStart);
   const [submitting, setSubmitting] = useState(false);
+
+  const applySuggested = (v: Vehicle | undefined) => {
+    if (!v?.valuation) return;
+    const s = v.valuation.overriddenPrice ?? v.valuation.suggestedPrice;
+    setStartPrice(Math.round((s * 0.85) / 100) * 100);
+    setReservePrice(Math.round((s * 0.97) / 100) * 100);
+  };
 
   useEffect(() => {
     if (!token) return;
@@ -40,9 +61,7 @@ export const ScheduleAuctionPage: React.FC = () => {
         const match = eligible.find((v) => v.id === (scheduleVehicleId ?? 'veh-qashqai')) ?? eligible[0];
         if (match) {
           setSelectedId(match.id);
-          const suggested = match.valuation?.overriddenPrice ?? match.valuation?.suggestedPrice ?? 10000;
-          setStartPrice(Math.round((suggested * 0.85) / 100) * 100);
-          setReservePrice(Math.round((suggested * 0.97) / 100) * 100);
+          applySuggested(match);
         }
       })
       .catch(() => {});
@@ -51,6 +70,7 @@ export const ScheduleAuctionPage: React.FC = () => {
   const vehicle = useMemo(() => vehicles.find((v) => v.id === selectedId) ?? null, [vehicles, selectedId]);
   const aiSuggested = vehicle?.valuation?.overriddenPrice ?? vehicle?.valuation?.suggestedPrice ?? 11200;
   const reserveDeltaPct = (((reservePrice - aiSuggested) / aiSuggested) * 100).toFixed(1);
+  const startInPast = startsAt.getTime() <= Date.now();
 
   const handlePublish = async (launchImmediately: boolean) => {
     if (!token || !vehicle) return;
@@ -67,12 +87,18 @@ export const ScheduleAuctionPage: React.FC = () => {
           durationMinutes,
           visibility,
           launchImmediately,
+          ...(launchImmediately ? {} : { startsAt: startsAt.toISOString() }),
         },
       });
       bumpDataVersion();
       pushToast(
-        launchImmediately ? 'Live Auction Opened' : 'Auction Scheduled',
-        `${vehicle.year} ${vehicle.make} ${vehicle.model} published to verified dealers.`,
+        launchImmediately ? 'Live auction opened' : 'Auction scheduled',
+        launchImmediately
+          ? `${vehicle.year} ${vehicle.make} ${vehicle.model} published to verified dealers.`
+          : `${vehicle.year} ${vehicle.make} ${vehicle.model} · ${startsAt.toLocaleString(tr ? 'tr-TR' : 'en-GB', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            })}`,
         'success'
       );
       if (launchImmediately) {
@@ -88,46 +114,46 @@ export const ScheduleAuctionPage: React.FC = () => {
     }
   };
 
+  const money = (n: number) => formatMoney(n, currency, exchangeRate);
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-extrabold text-[var(--ink-primary)] sm:text-3xl">
-            Schedule &amp; Launch Auction (UC10)
-          </h1>
-          <p className="mt-1 text-sm text-[var(--ink-secondary)]">
-            Configure hidden reserve price, minimum increment, and anti-sniping parameters against AI valuation.
-          </p>
-        </div>
-
-        <select
-          value={selectedId}
-          onChange={(e) => {
-            const v = vehicles.find((item) => item.id === e.target.value);
-            setSelectedId(e.target.value);
-            if (v?.valuation) {
-              const s = v.valuation.overriddenPrice ?? v.valuation.suggestedPrice;
-              setStartPrice(Math.round((s * 0.85) / 100) * 100);
-              setReservePrice(Math.round((s * 0.97) / 100) * 100);
-            }
-          }}
-          className="rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3.5 py-2 text-xs font-semibold text-[var(--ink-primary)]"
-        >
-          {vehicles.map((v) => (
-            <option key={v.id} value={v.id}>
-              {v.year} {v.make} {v.model} ({v.vin.slice(-6)})
-            </option>
-          ))}
-        </select>
-      </div>
+      <PageHeader
+        title={tr ? 'İhale planla' : 'Schedule auction'}
+        description={
+          tr
+            ? 'Başlangıç fiyatı, gizli rezerv ve artış adımını AI değerlemesine göre ayarlayın.'
+            : 'Set the starting price, hidden reserve and bid step against the AI valuation.'
+        }
+        actions={
+          vehicles.length > 0 && (
+            <Select<string>
+              value={selectedId}
+              ariaLabel={tr ? 'Araç seç' : 'Choose vehicle'}
+              align="end"
+              className="w-72"
+              onChange={(id) => {
+                setSelectedId(id);
+                applySuggested(vehicles.find((item) => item.id === id));
+              }}
+              options={vehicles.map((v) => ({
+                value: v.id,
+                label: `${v.year} ${v.make} ${v.model}`,
+                hint: `…${v.vin.slice(-6)}`,
+              }))}
+            />
+          )
+        }
+      />
 
       {!vehicle ? (
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-8 text-center text-sm text-[var(--ink-muted)]">
-          No eligible inspected vehicles available. Complete a field inspection first (BR-2).
+        <div className="rounded-[var(--r-lg)] border border-dashed border-[var(--border-strong)] p-10 text-center text-[13px] text-[var(--ink-muted)]">
+          {tr
+            ? 'Ekspertizi tamamlanmış uygun araç yok. Önce saha ekspertizini bitirin (BR-2).'
+            : 'No inspected vehicles are eligible. Finish a field inspection first (BR-2).'}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          {/* Left Vehicle Preview Card (Upgraded w3) */}
           <div className="space-y-4 lg:col-span-6">
             <VehicleStage
               make={vehicle.make}
@@ -139,158 +165,172 @@ export const ScheduleAuctionPage: React.FC = () => {
               compact
             />
 
-            <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-xs)]">
-              <div className="space-y-2.5 text-sm">
-                <div className="flex justify-between border-b border-[var(--border-subtle)] pb-2">
-                  <span className="text-[var(--ink-muted)]">Vehicle</span>
-                  <strong className="text-[var(--ink-primary)]">
-                    {vehicle.make} {vehicle.model} {vehicle.year} · {vehicle.mileageKm.toLocaleString('en-GB')} km
-                  </strong>
+            <Panel bodyClassName="p-0">
+              <dl className="divide-y divide-[var(--border-subtle)] text-[13px]">
+                <div className="flex justify-between gap-4 px-5 py-3">
+                  <dt className="text-[var(--ink-muted)]">{tr ? 'Araç' : 'Vehicle'}</dt>
+                  <dd className="text-right font-medium">
+                    {vehicle.make} {vehicle.model} {vehicle.year} ·{' '}
+                    <span className="font-mono-num">{vehicle.mileageKm.toLocaleString('en-GB')} km</span>
+                  </dd>
                 </div>
-                <div className="flex justify-between border-b border-[var(--border-subtle)] pb-2">
-                  <span className="text-[var(--ink-muted)]">Inspection</span>
-                  <strong className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                <div className="flex justify-between gap-4 px-5 py-3">
+                  <dt className="text-[var(--ink-muted)]">{tr ? 'Ekspertiz' : 'Inspection'}</dt>
+                  <dd className="inline-flex items-center gap-1.5 font-medium text-[var(--success)]">
                     <CheckCircle2 className="h-4 w-4" />
-                    Finalized · {vehicle.inspection?.damages.length ?? 0} damage(s)
-                  </strong>
+                    {tr ? 'Tamamlandı' : 'Finalized'} · {vehicle.inspection?.damages.length ?? 0}{' '}
+                    {tr ? 'hasar' : 'damage(s)'}
+                  </dd>
                 </div>
-                <div className="flex justify-between border-b border-[var(--border-subtle)] pb-2">
-                  <span className="text-[var(--ink-muted)]">AI Suggested Price</span>
-                  <strong className="font-mono-num text-[var(--ink-primary)]">
-                    {formatMoney(aiSuggested, currency, exchangeRate)}{' '}
+                <div className="flex justify-between gap-4 px-5 py-3">
+                  <dt className="text-[var(--ink-muted)]">{tr ? 'AI önerilen fiyat' : 'AI suggested price'}</dt>
+                  <dd className="text-right">
+                    <span className="font-mono-num font-medium">{money(aiSuggested)}</span>
                     {vehicle.valuation && (
-                      <span className="text-xs font-normal text-[var(--ink-muted)]">
-                        (range {formatMoney(vehicle.valuation.minPrice, currency, exchangeRate)} –{' '}
-                        {formatMoney(vehicle.valuation.maxPrice, currency, exchangeRate)})
-                      </span>
+                      <div className="font-mono-num text-xs text-[var(--ink-muted)]">
+                        {money(vehicle.valuation.minPrice)} – {money(vehicle.valuation.maxPrice)}
+                      </div>
                     )}
-                  </strong>
+                  </dd>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[var(--ink-muted)]">Model Version</span>
-                  <strong className="font-mono-num text-xs text-[var(--ink-primary)]">
-                    {vehicle.valuation?.modelVersion ?? 'valuation-v1.3'}
-                  </strong>
+                <div className="flex justify-between gap-4 px-5 py-3">
+                  <dt className="text-[var(--ink-muted)]">{tr ? 'Model sürümü' : 'Model version'}</dt>
+                  <dd className="font-mono-num text-xs">{vehicle.valuation?.modelVersion ?? 'valuation-v1.3'}</dd>
                 </div>
-              </div>
-            </div>
+              </dl>
+            </Panel>
           </div>
 
-          {/* Right Auction Settings Form */}
-          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-[var(--shadow-xs)] lg:col-span-6">
-            <h2 className="font-display text-lg font-bold text-[var(--ink-primary)]">
-              Auction Parameters
-            </h2>
-
-            <div className="mt-4 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-[var(--ink-secondary)]">
-                  Starting Price (£ GBP)
-                </label>
-                <input
-                  type="number"
-                  step={100}
-                  value={startPrice}
-                  onChange={(e) => setStartPrice(Number(e.target.value))}
-                  className="mt-1 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface-subtle)] px-3.5 py-2.5 font-mono-num text-sm font-bold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-[var(--ink-secondary)]">
-                  Reserve Price — Hidden from Bidders (BR-5, £ GBP)
-                </label>
-                <input
-                  type="number"
-                  step={100}
-                  value={reservePrice}
-                  onChange={(e) => setReservePrice(Number(e.target.value))}
-                  className="mt-1 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface-subtle)] px-3.5 py-2.5 font-mono-num text-sm font-bold"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-[var(--ink-secondary)]">
-                    Min. Bid Increment (£)
-                  </label>
+          <Panel title={tr ? 'İhale parametreleri' : 'Auction parameters'} className="lg:col-span-6">
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label={tr ? 'Başlangıç fiyatı (£)' : 'Starting price (£)'} htmlFor="start-price">
                   <input
+                    id="start-price"
+                    type="number"
+                    step={100}
+                    value={startPrice}
+                    onChange={(e) => setStartPrice(Number(e.target.value))}
+                    className={`${inputClass} font-mono-num`}
+                  />
+                </Field>
+                <Field
+                  label={tr ? 'Rezerv fiyat (£)' : 'Reserve price (£)'}
+                  htmlFor="reserve-price"
+                  hint={tr ? 'Alıcılardan gizlenir (BR-5)' : 'Hidden from bidders (BR-5)'}
+                >
+                  <input
+                    id="reserve-price"
+                    type="number"
+                    step={100}
+                    value={reservePrice}
+                    onChange={(e) => setReservePrice(Number(e.target.value))}
+                    className={`${inputClass} font-mono-num`}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label={tr ? 'Min. artış (£)' : 'Min. bid step (£)'} htmlFor="min-inc">
+                  <input
+                    id="min-inc"
                     type="number"
                     step={50}
                     value={minIncrement}
                     onChange={(e) => setMinIncrement(Number(e.target.value))}
-                    className="mt-1 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface-subtle)] px-3.5 py-2.5 font-mono-num text-sm font-bold"
+                    className={`${inputClass} font-mono-num`}
                   />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-[var(--ink-secondary)]">
-                    Duration
-                  </label>
-                  <select
+                </Field>
+                <Field label={tr ? 'Süre' : 'Duration'} htmlFor="duration">
+                  <Select<number>
+                    id="duration"
                     value={durationMinutes}
-                    onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                    className="mt-1 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface-subtle)] px-3.5 py-2.5 text-sm font-semibold"
-                  >
-                    <option value={10}>10 minutes</option>
-                    <option value={20}>20 minutes</option>
-                    <option value={30}>30 minutes</option>
-                    <option value={60}>60 minutes</option>
-                  </select>
-                </div>
+                    onChange={setDurationMinutes}
+                    options={[10, 20, 30, 60].map((m) => ({
+                      value: m,
+                      label: `${m} ${tr ? 'dakika' : 'minutes'}`,
+                    }))}
+                  />
+                </Field>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-[var(--ink-secondary)]">
-                  Room Visibility
-                </label>
-                <select
+              <Field label={tr ? 'Oda görünürlüğü' : 'Room visibility'} htmlFor="visibility">
+                <Select<'ALL_VERIFIED' | 'INVITED_ONLY'>
+                  id="visibility"
                   value={visibility}
-                  onChange={(e) => setVisibility(e.target.value as 'ALL_VERIFIED' | 'INVITED_ONLY')}
-                  className="mt-1 w-full rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface-subtle)] px-3.5 py-2.5 text-sm font-semibold"
-                >
-                  <option value="ALL_VERIFIED">All verified dealers on DriveHub</option>
-                  <option value="INVITED_ONLY">Invited partner galleries only</option>
-                </select>
-              </div>
+                  onChange={setVisibility}
+                  options={[
+                    {
+                      value: 'ALL_VERIFIED',
+                      label: tr ? 'DriveHub’daki tüm doğrulanmış alıcılar' : 'All verified dealers on DriveHub',
+                    },
+                    {
+                      value: 'INVITED_ONLY',
+                      label: tr ? 'Yalnızca davetli galeriler' : 'Invited partner galleries only',
+                    },
+                  ]}
+                />
+              </Field>
+
+              <Field
+                label={t(lang, 'startTime')}
+                htmlFor="starts-at"
+                hint={
+                  startInPast ? (
+                    <span className="text-[var(--danger)]">
+                      {tr ? 'Başlangıç zamanı gelecekte olmalı.' : 'Start time must be in the future.'}
+                    </span>
+                  ) : (
+                    t(lang, 'startTimeHint')
+                  )
+                }
+              >
+                <DateTimePicker id="starts-at" value={startsAt} onChange={setStartsAt} lang={lang} min={new Date()} />
+              </Field>
 
               {reservePrice < startPrice ? (
-                <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs font-medium text-red-700 dark:text-red-300">
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
-                  Reserve price must be greater than or equal to starting price.
-                </div>
+                <Callout tone="danger" icon={<AlertTriangle className="h-4 w-4" />}>
+                  {tr
+                    ? 'Rezerv fiyat başlangıç fiyatından düşük olamaz.'
+                    : 'Reserve price must be greater than or equal to the starting price.'}
+                </Callout>
               ) : (
-                <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs font-medium text-amber-800 dark:text-amber-300">
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
-                  Reserve is {Math.abs(Number(reserveDeltaPct))}%{' '}
-                  {Number(reserveDeltaPct) < 0 ? 'below' : 'above'} the AI suggested price ({formatMoney(aiSuggested, currency, exchangeRate)}).
-                </div>
+                <Callout tone="info">
+                  {tr ? (
+                    <>
+                      Rezerv, AI önerisinin ({money(aiSuggested)}) %{Math.abs(Number(reserveDeltaPct))}{' '}
+                      {Number(reserveDeltaPct) < 0 ? 'altında' : 'üstünde'}.
+                    </>
+                  ) : (
+                    <>
+                      Reserve is {Math.abs(Number(reserveDeltaPct))}%{' '}
+                      {Number(reserveDeltaPct) < 0 ? 'below' : 'above'} the AI suggestion ({money(aiSuggested)}).
+                    </>
+                  )}
+                </Callout>
               )}
 
-              <div className="grid grid-cols-1 gap-2.5 pt-2 sm:grid-cols-2">
-                <button
-                  type="button"
-                  disabled={submitting || reservePrice < startPrice}
+              <div className="grid grid-cols-1 gap-2 border-t border-[var(--border-subtle)] pt-4 sm:grid-cols-2">
+                <Button
+                  disabled={submitting || reservePrice < startPrice || startInPast}
                   onClick={() => handlePublish(false)}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] px-4 py-3 text-xs font-bold text-[var(--ink-primary)] hover:bg-[var(--bg-surface-subtle)] disabled:opacity-45"
                 >
                   <CalendarPlus className="h-4 w-4" />
-                  Save Scheduled
-                </button>
-                <button
-                  type="button"
+                  {tr ? 'Planlı kaydet' : 'Save as scheduled'}
+                </Button>
+                <Button
+                  variant="primary"
                   disabled={submitting || reservePrice < startPrice}
                   onClick={() => handlePublish(true)}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--brand)] px-4 py-3 text-xs font-bold text-white shadow-sm transition-transform hover:bg-[var(--brand-hover)] active:scale-[0.97] disabled:opacity-45"
                 >
                   <Radio className="h-4 w-4" />
-                  Publish &amp; Open Live Room
-                </button>
+                  {tr ? 'Yayınla ve odayı aç' : 'Publish & open room'}
+                </Button>
               </div>
             </div>
-          </div>
+          </Panel>
         </div>
       )}
     </div>
   );
 };
-

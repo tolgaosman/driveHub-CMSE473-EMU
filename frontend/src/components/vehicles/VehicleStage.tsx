@@ -44,28 +44,27 @@ export const VehicleStage: React.FC<VehicleStageProps> = ({
   const visibleDamages = damages.filter((d) => d.confirmedByInspector !== false);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[#0b1322] text-white shadow-[var(--shadow-sm)]">
-      {/* Studio subtle grid + radial spotlight */}
+    <div className="relative overflow-hidden rounded-[var(--r-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-[var(--ink-primary)]">
+      {/* Inspection-sheet dot grid */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-40"
+        className="pointer-events-none absolute inset-0"
         style={{
-          backgroundImage:
-            'radial-gradient(circle at 52% 28%, rgba(234,106,18,0.22), transparent 55%), linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px)',
-          backgroundSize: '100% 100%, 28px 28px, 28px 28px',
+          backgroundImage: 'radial-gradient(rgba(26,26,26,0.09) 1px, transparent 1px)',
+          backgroundSize: '16px 16px',
         }}
       />
 
       {/* Top HUD bar */}
-      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-b border-white/10 px-4 py-2.5 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 font-mono-num text-[11px] text-slate-200">
-            <ScanLine className="h-3.5 w-3.5 text-[#f28c28]" />
+      <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 py-2 text-xs">
+        <div className="flex items-center gap-3 text-[var(--ink-secondary)]">
+          <span className="inline-flex items-center gap-1.5 font-mono-num text-[11px]">
+            <ScanLine className="h-3.5 w-3.5 text-[var(--ink-muted)]" />
             {modelVersion}
           </span>
           {plateBlur && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] text-emerald-300">
-              <ShieldCheck className="h-3 w-3" />
-              Plate Blur ON
+            <span className="inline-flex items-center gap-1 text-[11px] text-[var(--success)]">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Plate blur on
             </span>
           )}
         </div>
@@ -73,17 +72,18 @@ export const VehicleStage: React.FC<VehicleStageProps> = ({
         <button
           type="button"
           onClick={() => setShowBoxes((v) => !v)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-slate-200 transition-colors hover:bg-white/12"
+          aria-pressed={showBoxes}
+          className="inline-flex h-7 items-center gap-1.5 rounded-[var(--r-sm)] border border-[var(--border-strong)] bg-[var(--bg-surface)] px-2 text-[11px] font-medium text-[var(--ink-secondary)] transition-colors hover:bg-[var(--bg-hover)]"
         >
-          {showBoxes ? <Eye className="h-3.5 w-3.5 text-[#f28c28]" /> : <EyeOff className="h-3.5 w-3.5" />}
-          {showBoxes ? 'AI Boxes Visible' : 'AI Boxes Hidden'}
+          {showBoxes ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+          {showBoxes ? 'Damage boxes on' : 'Damage boxes off'}
         </button>
       </div>
 
       {/* Main SVG Automotive Stage */}
       <div className={`relative w-full ${compact ? 'h-48' : 'h-64 sm:h-72'} select-none`}>
         {scanning && (
-          <div className="animate-scan-beam pointer-events-none absolute inset-x-0 top-0 z-20 h-14 bg-gradient-to-b from-transparent via-[#f28c28]/35 to-transparent" />
+          <div className="animate-scan-beam pointer-events-none absolute inset-x-0 top-0 z-20 h-px bg-[var(--brand)] opacity-70" />
         )}
 
         <svg
@@ -94,23 +94,23 @@ export const VehicleStage: React.FC<VehicleStageProps> = ({
         >
           <defs>
             <linearGradient id="carBodyGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#94a3b8" stopOpacity="0.95" />
-              <stop offset="48%" stopColor={accentColor} stopOpacity="1" />
-              <stop offset="100%" stopColor="#0f172a" stopOpacity="1" />
+              <stop offset="0%" stopColor="#cfcdc6" stopOpacity="1" />
+              <stop offset="55%" stopColor={accentColor} stopOpacity="0.92" />
+              <stop offset="100%" stopColor="#2a2a2a" stopOpacity="1" />
             </linearGradient>
             <linearGradient id="glassGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#cbd5e1" stopOpacity="0.65" />
-              <stop offset="100%" stopColor="#1e293b" stopOpacity="0.9" />
+              <stop offset="0%" stopColor="#e9eef2" stopOpacity="0.95" />
+              <stop offset="100%" stopColor="#5c6670" stopOpacity="0.95" />
             </linearGradient>
             <radialGradient id="floorShadow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#000000" stopOpacity="0.85" />
+              <stop offset="0%" stopColor="#1a1a1a" stopOpacity="0.28" />
               <stop offset="100%" stopColor="#000000" stopOpacity="0" />
             </radialGradient>
           </defs>
 
           {/* Studio floor & reflection */}
           <ellipse cx="320" cy="224" rx="245" ry="20" fill="url(#floorShadow)" />
-          <line x1="36" y1="226" x2="604" y2="226" stroke="rgba(148,163,184,0.16)" strokeWidth="1" />
+          <line x1="36" y1="226" x2="604" y2="226" stroke="rgba(26,26,26,0.18)" strokeWidth="1" />
 
           {/* Precision vehicle silhouette adapted to bodyType */}
           {isSuv ? (
@@ -118,7 +118,7 @@ export const VehicleStage: React.FC<VehicleStageProps> = ({
               <path
                 d="M78 198 L82 146 Q90 128 122 122 L176 116 L228 74 Q246 62 282 62 L442 62 Q472 64 494 94 L520 120 L554 128 Q572 134 574 156 L574 198 Z"
                 fill="url(#carBodyGrad)"
-                stroke="rgba(255,255,255,0.22)"
+                stroke="rgba(26,26,26,0.35)"
                 strokeWidth="1.6"
               />
               <path
@@ -135,7 +135,7 @@ export const VehicleStage: React.FC<VehicleStageProps> = ({
               <path
                 d="M94 200 L98 154 Q108 134 146 126 L204 120 L256 80 Q276 68 312 68 L442 68 Q478 70 502 104 L526 132 L548 140 Q562 148 562 172 L562 200 Z"
                 fill="url(#carBodyGrad)"
-                stroke="rgba(255,255,255,0.22)"
+                stroke="rgba(26,26,26,0.35)"
                 strokeWidth="1.6"
               />
               <path
@@ -152,7 +152,7 @@ export const VehicleStage: React.FC<VehicleStageProps> = ({
               <path
                 d="M68 200 L74 156 Q86 134 134 126 L206 118 L266 78 Q288 66 326 66 L432 66 Q468 68 504 106 L536 122 L566 132 Q582 140 582 168 L582 200 Z"
                 fill="url(#carBodyGrad)"
-                stroke="rgba(255,255,255,0.22)"
+                stroke="rgba(26,26,26,0.35)"
                 strokeWidth="1.6"
               />
               <path
@@ -181,9 +181,9 @@ export const VehicleStage: React.FC<VehicleStageProps> = ({
           {/* Wheels with alloy spokes */}
           {[184, 466].map((cx) => (
             <g key={cx}>
-              <circle cx={cx} cy="202" r="36" fill="#090d16" stroke="#334155" strokeWidth="3" />
-              <circle cx={cx} cy="202" r="24" fill="#1e293b" stroke="#94a3b8" strokeWidth="2" />
-              <circle cx={cx} cy="202" r="7" fill="#cbd5e1" />
+              <circle cx={cx} cy="202" r="36" fill="#1f1f1f" stroke="#3a3a3a" strokeWidth="3" />
+              <circle cx={cx} cy="202" r="24" fill="#4a4a4a" stroke="#b8b5ad" strokeWidth="2" />
+              <circle cx={cx} cy="202" r="7" fill="#d8d5ce" />
               {[0, 60, 120, 180, 240, 300].map((deg) => (
                 <line
                   key={deg}
@@ -191,9 +191,9 @@ export const VehicleStage: React.FC<VehicleStageProps> = ({
                   y1={202}
                   x2={cx + Math.cos((deg * Math.PI) / 180) * 22}
                   y2={202 + Math.sin((deg * Math.PI) / 180) * 22}
-                  stroke="#94a3b8"
+                  stroke="#b8b5ad"
                   strokeWidth="2"
-                  opacity="0.7"
+                  opacity="0.8"
                 />
               ))}
             </g>
@@ -205,7 +205,7 @@ export const VehicleStage: React.FC<VehicleStageProps> = ({
           visibleDamages.map((dmg) => {
             const isDent = dmg.type === 'DENT';
             const isSelected = activeDamageId === dmg.id;
-            const color = isDent ? '#ef4444' : '#f59e0b';
+            const color = isDent ? '#d92d20' : '#dc8a05';
             return (
               <motion.button
                 key={dmg.id}
@@ -222,11 +222,11 @@ export const VehicleStage: React.FC<VehicleStageProps> = ({
                   borderColor: color,
                   backgroundColor: isSelected ? `${color}30` : `${color}14`,
                 }}
-                className="group absolute z-10 rounded-md border-2 transition-colors hover:bg-white/10"
+                className="group absolute z-10 rounded-[3px] border-2 transition-colors"
               >
                 <span
                   style={{ backgroundColor: color }}
-                  className="pointer-events-none absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 font-mono-num text-[10px] font-bold uppercase tracking-wide text-white shadow"
+                  className="pointer-events-none absolute -top-5 -left-0.5 whitespace-nowrap rounded-t-[3px] px-1.5 py-px font-mono-num text-[10px] font-semibold uppercase tracking-wide text-white"
                 >
                   {dmg.type} {(dmg.confidence * 100).toFixed(0)}%
                 </span>
@@ -235,20 +235,20 @@ export const VehicleStage: React.FC<VehicleStageProps> = ({
           })}
 
         {/* Bottom-left Vehicle Watermark */}
-        <div className="pointer-events-none absolute bottom-2.5 left-4 flex items-center gap-2 text-xs text-slate-300">
-          <span className="font-display font-semibold text-white">
+        <div className="pointer-events-none absolute bottom-2.5 left-4 flex items-center gap-2 text-xs">
+          <span className="font-semibold text-[var(--ink-primary)]">
             {year} {make} {model}
           </span>
-          <span className="text-slate-500">·</span>
-          <span className="font-mono-num text-[11px] uppercase text-slate-400">
-            Angle: {selectedAngle}
+          <span className="text-[var(--ink-muted)]">·</span>
+          <span className="font-mono-num text-[11px] uppercase text-[var(--ink-muted)]">
+            {selectedAngle}
           </span>
         </div>
       </div>
 
       {/* 8-Angle Selector Strip */}
       {!compact && (
-        <div className="relative z-10 flex items-center gap-1 overflow-x-auto border-t border-white/10 bg-black/25 px-3 py-2">
+        <div className="relative z-10 flex items-center gap-1 overflow-x-auto border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] px-3 py-2">
           {MANDATORY_ANGLES.map((ang) => {
             const hasDamageOnAngle = visibleDamages.some((d) => d.angle === ang.id);
             const active = selectedAngle === ang.id;
@@ -257,17 +257,17 @@ export const VehicleStage: React.FC<VehicleStageProps> = ({
                 key={ang.id}
                 type="button"
                 onClick={() => setSelectedAngle(ang.id)}
-                className={`relative flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                className={`relative flex h-7 shrink-0 items-center gap-1.5 rounded-[var(--r-sm)] px-2.5 text-[11px] font-medium transition-colors ${
                   active
-                    ? 'bg-[#ea6a12] text-white'
-                    : 'bg-white/5 text-slate-300 hover:bg-white/10'
+                    ? 'bg-[var(--ink-primary)] text-white'
+                    : 'text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)]'
                 }`}
               >
                 {ang.labelEn}
                 {hasDamageOnAngle && (
                   <span
                     className={`h-1.5 w-1.5 rounded-full ${
-                      active ? 'bg-white' : 'bg-red-400'
+                      active ? 'bg-white' : 'bg-[var(--danger)]'
                     }`}
                   />
                 )}

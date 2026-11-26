@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Building2, Code2, Shield, ShieldAlert } from 'lucide-react';
+import { Search, ShieldAlert } from 'lucide-react';
 import { AuditLogEntry, Tenant } from '@shared/contracts';
 import { useApp } from '@/context/AppContext';
 import { apiFetch } from '@/lib/api';
+import { Badge, Button, PageHeader, Panel, inputClass } from '@/components/ui/primitives';
 
 export const AdminConsolePage: React.FC = () => {
-  const { token, user, dataVersion, pushToast } = useApp();
+  const { token, user, lang, dataVersion, pushToast } = useApp();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [openApi, setOpenApi] = useState<Record<string, unknown> | null>(null);
@@ -55,149 +56,135 @@ export const AdminConsolePage: React.FC = () => {
       l.actorName.toLowerCase().includes(logFilter.toLowerCase())
   );
 
+  const tr = lang === 'tr';
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-extrabold text-[var(--ink-primary)] sm:text-3xl">
-          Tenant Governance, Security Audit &amp; API Contracts (UC19–UC20)
-        </h1>
-        <p className="mt-1 text-sm text-[var(--ink-secondary)]">
-          Multi-tenant isolation controls, verified wholesale dealer KYC, append-only security log, and OpenAPI 3.1 contract.
-        </p>
-      </div>
+      <PageHeader
+        title={tr ? 'Yönetim ve denetim' : 'Admin & audit'}
+        description={
+          tr
+            ? 'Galeriler, alıcı doğrulaması, değiştirilemez denetim kaydı ve API sözleşmesi.'
+            : 'Galleries, dealer verification, the append-only audit log and the API contract.'
+        }
+        actions={<Badge>{user?.role}</Badge>}
+      />
 
-      {/* Tenants Grid */}
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-xs)]">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 font-display text-base font-bold text-[var(--ink-primary)]">
-            <Building2 className="h-4.5 w-4.5 text-[var(--brand)]" />
-            Registered Galleries (Tenants)
-          </h2>
-          <span className="font-mono-num text-xs text-[var(--ink-muted)]">
-            Role: {user?.role}
-          </span>
+      <Panel
+        title={tr ? 'Kayıtlı galeriler' : 'Registered galleries'}
+        meta={`${tenants.length} tenants`}
+        bodyClassName="p-0"
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] border-collapse text-left text-[13px]">
+            <thead>
+              <tr className="border-b border-[var(--border-subtle)] text-[11px] uppercase tracking-wide text-[var(--ink-muted)]">
+                <th className="px-5 py-2.5 font-medium">{tr ? 'Galeri' : 'Gallery'}</th>
+                <th className="px-5 py-2.5 font-medium">{tr ? 'Şehir' : 'City'}</th>
+                <th className="px-5 py-2.5 font-medium">{tr ? 'Vergi no' : 'Tax no.'}</th>
+                <th className="px-5 py-2.5 font-medium">Plan</th>
+                <th className="px-5 py-2.5 font-medium">KYC</th>
+                <th className="px-5 py-2.5 font-medium">{tr ? 'Durum' : 'Status'}</th>
+                <th className="px-5 py-2.5" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border-subtle)]">
+              {tenants.map((t) => (
+                <tr key={t.id}>
+                  <td className="px-5 py-3 font-medium">{t.name}</td>
+                  <td className="px-5 py-3 text-[var(--ink-secondary)]">{t.city}</td>
+                  <td className="px-5 py-3 font-mono-num text-xs text-[var(--ink-secondary)]">{t.taxNo}</td>
+                  <td className="px-5 py-3 text-xs text-[var(--ink-secondary)]">{t.plan}</td>
+                  <td className="px-5 py-3">
+                    <Badge tone={t.verifiedDealer ? 'success' : 'warning'}>
+                      {t.verifiedDealer ? (tr ? 'Doğrulandı' : 'Verified') : tr ? 'Bekliyor' : 'Pending'}
+                    </Badge>
+                  </td>
+                  <td className="px-5 py-3">
+                    <Badge tone={t.isActive ? 'success' : 'danger'} dot>
+                      {t.isActive ? (tr ? 'Aktif' : 'Active') : tr ? 'Askıda' : 'Suspended'}
+                    </Badge>
+                  </td>
+                  <td className="px-5 py-3 text-right">
+                    {user?.role === 'PLATFORM_ADMIN' && t.id !== 'tenant-platform' && (
+                      <div className="flex justify-end gap-1.5">
+                        <Button size="sm" onClick={() => toggleTenantField(t.id, 'verifiedDealer')}>
+                          KYC
+                        </Button>
+                        <Button size="sm" variant="danger" onClick={() => toggleTenantField(t.id, 'isActive')}>
+                          {t.isActive ? (tr ? 'Askıya al' : 'Suspend') : tr ? 'Etkinleştir' : 'Activate'}
+                        </Button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
+      </Panel>
 
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {tenants.map((t) => (
-            <div
-              key={t.id}
-              className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-subtle)] p-4 text-xs"
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="font-display text-sm font-bold text-[var(--ink-primary)]">
-                    {t.name}
-                  </div>
-                  <div className="font-mono-num text-[11px] text-[var(--ink-muted)]">
-                    {t.city} · {t.taxNo} · {t.plan}
-                  </div>
-                </div>
-                <span
-                  className={`rounded-full px-2 py-0.5 font-mono-num text-[10px] font-bold ${
-                    t.isActive
-                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-                      : 'bg-red-500/15 text-red-700 dark:text-red-300'
-                  }`}
-                >
-                  {t.isActive ? 'ACTIVE' : 'SUSPENDED'}
-                </span>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between border-t border-[var(--border-subtle)] pt-3">
-                <span className="text-[11px] font-medium text-[var(--ink-secondary)]">
-                  Dealer KYC: <strong>{t.verifiedDealer ? 'Verified ✓' : 'Pending'}</strong>
-                </span>
-                {user?.role === 'PLATFORM_ADMIN' && t.id !== 'tenant-platform' && (
-                  <div className="flex gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => toggleTenantField(t.id, 'verifiedDealer')}
-                      className="rounded-lg border border-[var(--border-strong)] bg-[var(--bg-surface)] px-2 py-1 text-[10px] font-semibold"
-                    >
-                      Toggle KYC
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => toggleTenantField(t.id, 'isActive')}
-                      className="rounded-lg border border-red-500/25 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-700 dark:text-red-300"
-                    >
-                      {t.isActive ? 'Suspend' : 'Activate'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Audit Log + OpenAPI Inspector */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-xs)] lg:col-span-7">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <h2 className="flex items-center gap-2 font-display text-base font-bold text-[var(--ink-primary)]">
-              <Shield className="h-4.5 w-4.5 text-[var(--brand)]" />
-              Append-Only Security &amp; Business Audit Log (NFR-SEC7)
-            </h2>
-            <input
-              type="text"
-              value={logFilter}
-              onChange={(e) => setLogFilter(e.target.value)}
-              placeholder="Filter action or actor..."
-              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-subtle)] px-3 py-1.5 text-xs"
-            />
-          </div>
-
-          <div className="max-h-80 space-y-2 overflow-y-auto">
-            {filteredLogs.map((log) => (
-              <div
-                key={log.id}
-                className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-subtle)] p-3 text-xs"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono-num text-[10px] font-bold ${
-                        log.severity === 'SECURITY'
-                          ? 'bg-red-500/15 text-red-700 dark:text-red-300'
-                          : log.severity === 'WARNING'
-                          ? 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
-                          : 'bg-blue-500/12 text-blue-700 dark:text-blue-300'
-                      }`}
-                    >
-                      {log.severity === 'SECURITY' && <ShieldAlert className="h-3 w-3" />}
-                      {log.action}
-                    </span>
-                    <span className="font-semibold text-[var(--ink-primary)]">{log.actorName}</span>
-                  </div>
-                  <span className="font-mono-num text-[10px] text-[var(--ink-muted)]">
+        <Panel
+          className="lg:col-span-7"
+          title={tr ? 'Denetim kaydı' : 'Audit log'}
+          meta="NFR-SEC7 · append-only"
+          actions={
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--ink-muted)]" />
+              <input
+                type="search"
+                value={logFilter}
+                onChange={(e) => setLogFilter(e.target.value)}
+                placeholder={tr ? 'İşlem veya kişi ara' : 'Filter action or actor'}
+                aria-label={tr ? 'Denetim kaydını filtrele' : 'Filter audit log'}
+                className={`${inputClass} h-8 w-52 pl-8 text-xs`}
+              />
+            </div>
+          }
+          bodyClassName="max-h-96 overflow-y-auto"
+        >
+          {filteredLogs.length === 0 ? (
+            <p className="px-5 py-10 text-center text-xs text-[var(--ink-muted)]">
+              {tr ? 'Eşleşen kayıt yok.' : 'No matching entries.'}
+            </p>
+          ) : (
+            <ol className="divide-y divide-[var(--border-subtle)]">
+              {filteredLogs.map((log) => (
+                <li key={log.id} className="grid grid-cols-[64px_1fr] gap-3 px-5 py-3 text-xs">
+                  <time className="pt-0.5 font-mono-num text-[11px] text-[var(--ink-muted)]">
                     {new Date(log.timestamp).toLocaleTimeString('en-GB')}
-                  </span>
-                </div>
-                <p className="mt-1 text-[var(--ink-secondary)]">{log.details}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+                  </time>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge
+                        tone={log.severity === 'SECURITY' ? 'danger' : log.severity === 'WARNING' ? 'warning' : 'neutral'}
+                        className="font-mono-num"
+                      >
+                        {log.severity === 'SECURITY' && <ShieldAlert className="h-3 w-3" />}
+                        {log.action}
+                      </Badge>
+                      <span className="font-medium">{log.actorName}</span>
+                    </div>
+                    <p className="mt-1 text-[var(--ink-secondary)]">{log.details}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </Panel>
 
-        {/* OpenAPI 3.1 Contract */}
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[#0b1220] p-5 text-slate-200 shadow-[var(--shadow-xs)] lg:col-span-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="flex items-center gap-2 font-display text-sm font-bold text-white">
-              <Code2 className="h-4 w-4 text-[#f28c28]" />
-              OpenAPI 3.1 Contract (/api/openapi.json)
-            </h2>
-            <span className="rounded bg-white/10 px-2 py-0.5 font-mono-num text-[10px] text-emerald-300">
-              STD-5
-            </span>
-          </div>
-          <pre className="max-h-80 overflow-auto rounded-xl bg-black/40 p-3 font-mono-num text-[11px] leading-relaxed text-slate-300">
-            {openApi ? JSON.stringify(openApi, null, 2) : 'Loading OpenAPI schema...'}
+        <Panel
+          className="lg:col-span-5"
+          title="OpenAPI 3.1"
+          meta="/api/openapi.json · STD-5"
+          bodyClassName="p-0"
+        >
+          <pre className="max-h-96 overflow-auto bg-[var(--bg-surface-subtle)] p-4 font-mono-num text-[11px] leading-relaxed text-[var(--ink-secondary)]">
+            {openApi ? JSON.stringify(openApi, null, 2) : tr ? 'Şema yükleniyor…' : 'Loading schema…'}
           </pre>
-        </div>
+        </Panel>
       </div>
     </div>
   );
 };
-

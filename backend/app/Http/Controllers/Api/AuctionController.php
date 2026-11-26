@@ -76,6 +76,7 @@ class AuctionController extends Controller
             'durationMinutes' => ['integer', 'min:1', 'max:120'],
             'visibility' => ['in:ALL_VERIFIED,INVITED_ONLY'],
             'launchImmediately' => ['boolean'],
+            'startsAt' => ['nullable', 'date', 'after:now'],
         ]);
 
         if ($data['reservePrice'] < $data['startPrice']) {
@@ -92,6 +93,9 @@ class AuctionController extends Controller
 
         $now = Carbon::now();
         $launch = $data['launchImmediately'] ?? true;
+        $startsAt = (! $launch && ! empty($data['startsAt']))
+            ? Carbon::parse($data['startsAt'])
+            : $now;
 
         $auction = Auction::create([
             'id' => 'auc-'.Str::lower(Str::random(8)),
@@ -106,8 +110,8 @@ class AuctionController extends Controller
             'extensions_count' => 0,
             'max_extensions' => 10,
             'visibility' => $data['visibility'] ?? 'ALL_VERIFIED',
-            'starts_at' => $now,
-            'ends_at' => $now->copy()->addMinutes($data['durationMinutes'] ?? 20),
+            'starts_at' => $startsAt,
+            'ends_at' => $startsAt->copy()->addMinutes($data['durationMinutes'] ?? 20),
             'status' => $launch ? 'LIVE' : 'SCHEDULED',
             'connected_bidders' => $launch ? 8 : 0,
         ]);

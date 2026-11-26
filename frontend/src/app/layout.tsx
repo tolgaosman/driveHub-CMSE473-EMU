@@ -1,25 +1,21 @@
 import type { Metadata } from 'next';
+import { Geist, Geist_Mono } from 'next/font/google';
 import { Providers } from './providers';
 import '../index.css';
 
+const geist = Geist({ subsets: ['latin', 'latin-ext'], variable: '--font-geist', display: 'swap' });
+const geistMono = Geist_Mono({ subsets: ['latin', 'latin-ext'], variable: '--font-geist-mono', display: 'swap' });
+
 export const metadata: Metadata = {
-  title: 'DriveHub — Omni-Channel Vehicle Lifecycle, Live Auction & AI-Valuation',
+  title: 'DriveHub — Vehicle inspection, valuation & live dealer auctions',
   description:
-    'Multi-tenant North Cyprus automotive gallery platform: ISO 3779 VIN decoding, YOLOv8 exterior damage inspection, dynamic valuation, and atomic live B2B auctions.',
+    'Multi-tenant platform for North Cyprus vehicle galleries: VIN decoding, AI damage inspection, valuation and live B2B auctions.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="antialiased selection:bg-[#EA6A12]/20 selection:text-[#EA6A12]">
+    <html lang="en" className={`${geist.variable} ${geistMono.variable}`} suppressHydrationWarning>
+      <body className="antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

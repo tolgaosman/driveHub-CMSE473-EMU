@@ -1,20 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import {
-  ArrowRight,
-  Building2,
-  Cpu,
-  Gavel,
-  Lock,
-  Radio,
-  ScanLine,
-  ShieldCheck,
-  Smartphone,
-} from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Loader2 } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { VehicleStage } from '@/components/vehicles/VehicleStage';
+import { Wordmark } from '@/components/layout/AppShell';
+import { LanguageMenu } from '@/components/ui/LanguageMenu';
+import { Field, buttonClass, inputClass } from '@/components/ui/primitives';
 
 const HERO_DAMAGES = [
   {
@@ -41,12 +33,98 @@ const HERO_DAMAGES = [
   },
 ];
 
+const ROLES = [
+  {
+    id: 'user-ayse',
+    role: { en: 'Gallery manager', tr: 'Galeri yöneticisi' },
+    name: 'Ayşe Kaya',
+    tenant: 'Lefkoşa Auto Gallery',
+    desc: {
+      en: 'Stock, AI valuations, price overrides, auction scheduling and reports.',
+      tr: 'Stok, AI değerlemeleri, fiyat düzeltme, ihale planlama ve raporlar.',
+    },
+  },
+  {
+    id: 'user-mehmet',
+    role: { en: 'Wholesale dealer', tr: 'Toptan alıcı' },
+    name: 'Mehmet Demir',
+    tenant: 'Girne Motors',
+    desc: {
+      en: 'Joins live rooms, reads damage reports, bids and receives hand-over papers.',
+      tr: 'Canlı odalara katılır, hasar raporlarını okur, teklif verir, teslim belgesini alır.',
+    },
+  },
+  {
+    id: 'user-kemal',
+    role: { en: 'Field inspector', tr: 'Saha eksperi' },
+    name: 'Kemal Arslan',
+    tenant: 'Lefkoşa Auto Gallery',
+    desc: {
+      en: 'Scans the VIN, shoots 8 angles offline and confirms detected damage.',
+      tr: 'VIN okutur, çevrimdışı 8 açı çeker ve tespit edilen hasarları onaylar.',
+    },
+  },
+  {
+    id: 'user-admin',
+    role: { en: 'Platform admin', tr: 'Platform yöneticisi' },
+    name: 'Tolga O. Falay',
+    tenant: 'DriveHub Platform Ops',
+    desc: {
+      en: 'Onboards galleries, verifies dealers and reviews the audit log.',
+      tr: 'Galerileri ekler, alıcıları doğrular ve denetim kaydını inceler.',
+    },
+  },
+];
+
+const METRICS = [
+  { value: '9.4 ms', label: { en: 'p99 bid latency', tr: 'p99 teklif gecikmesi' }, target: '< 15 ms' },
+  { value: '2.8 s', label: { en: 'Damage scan per car', tr: 'Araç başı hasar taraması' }, target: '≤ 4 s' },
+  { value: '0', label: { en: 'Duplicate bids accepted', tr: 'Kabul edilen mükerrer teklif' }, target: 'REQ-7.3' },
+];
+
+const STEPS = [
+  {
+    n: '01',
+    title: { en: 'Register', tr: 'Kayıt' },
+    body: {
+      en: 'VIN is decoded (ISO 3779) and the car enters the gallery’s stock.',
+      tr: 'VIN çözülür (ISO 3779), araç galerinin stoğuna girer.',
+    },
+  },
+  {
+    n: '02',
+    title: { en: 'Inspect', tr: 'Ekspertiz' },
+    body: {
+      en: 'Inspector shoots 8 angles; YOLOv8 marks dents and scratches for review.',
+      tr: 'Eksper 8 açı çeker; YOLOv8 göçük ve çizikleri onaya sunar.',
+    },
+  },
+  {
+    n: '03',
+    title: { en: 'Value', tr: 'Değerleme' },
+    body: {
+      en: 'Market price minus confirmed damage gives a range the manager can override.',
+      tr: 'Piyasa fiyatından onaylı hasar düşülür; yönetici aralığı düzeltebilir.',
+    },
+  },
+  {
+    n: '04',
+    title: { en: 'Auction', tr: 'İhale' },
+    body: {
+      en: 'Verified dealers bid live with a hidden reserve and anti-sniping extensions.',
+      tr: 'Doğrulanmış alıcılar gizli rezerv ve uzatma kuralıyla canlı teklif verir.',
+    },
+  },
+];
+
 export const ShowcaseLanding: React.FC = () => {
-  const { switchPersona, loginWithCredentials, lang, setLang } = useApp();
+  const { switchPersona, loginWithCredentials, lang } = useApp();
   const [email, setEmail] = useState('ayse.kaya@gallery-lefkosa.com');
   const [password, setPassword] = useState('password123');
   const [loginError, setLoginError] = useState<string | null>(null);
+  const [signingIn, setSigningIn] = useState(false);
   const [loadingRole, setLoadingRole] = useState<string | null>(null);
+  const tr = lang === 'tr';
 
   const handleRoleLaunch = async (userId: string) => {
     setLoadingRole(userId);
@@ -60,301 +138,226 @@ export const ShowcaseLanding: React.FC = () => {
   const handleManualLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
+    setSigningIn(true);
     try {
       await loginWithCredentials(email, password);
     } catch (err) {
       setLoginError((err as Error).message);
+    } finally {
+      setSigningIn(false);
     }
   };
 
   return (
-    <div className="min-h-dvh bg-[#070c16] text-slate-100">
-      {/* Top Editorial Navbar */}
-      <header className="sticky top-0 z-30 border-b border-white/10 bg-[#070c16]/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1360px] items-center justify-between px-5 py-4 sm:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#ea6a12] to-[#c2410c] text-white">
-              <Gavel className="h-4.5 w-4.5" />
-            </div>
-            <div>
-              <div className="font-display text-lg font-extrabold tracking-tight text-white">
-                Drive<span className="text-[#f28c28]">Hub</span>
-              </div>
-              <div className="font-mono-num text-[10px] uppercase tracking-wider text-slate-400">
-                EMU CMSE473 · Group 17 · Project #15
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setLang(lang === 'en' ? 'tr' : 'en')}
-              className="rounded-lg border border-white/12 bg-white/5 px-3 py-1.5 font-mono-num text-xs font-semibold text-slate-200 hover:bg-white/10"
-            >
-              {lang === 'en' ? 'EN / TR' : 'TR / EN'}
-            </button>
+    <div className="min-h-dvh bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
+      {/* Header */}
+      <header className="sticky top-0 z-30 border-b border-[var(--border-subtle)] bg-[var(--bg-canvas)]">
+        <div className="mx-auto flex h-14 max-w-[1240px] items-center justify-between px-5 sm:px-8">
+          <Wordmark sub="KKTC" />
+          <div className="flex items-center gap-2">
+            <LanguageMenu />
             <button
               type="button"
               onClick={() => handleRoleLaunch('user-mehmet')}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#ea6a12] px-4 py-2 text-xs font-semibold text-white shadow-sm transition-transform hover:bg-[#d45b0a] active:scale-[0.97]"
+              className={buttonClass('dark', 'sm', 'h-8')}
             >
-              <Radio className="h-3.5 w-3.5 animate-pulse" />
-              {lang === 'tr' ? 'Canlı İhaleye Katıl' : 'Enter Live Auction'}
+              <span className="h-1.5 w-1.5 rounded-full bg-[#ff6b4a]" />
+              {tr ? 'Canlı ihaleye katıl' : 'Join live auction'}
             </button>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden border-b border-white/10">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-45"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 75% 24%, rgba(234,106,18,0.22), transparent 50%), radial-gradient(circle at 18% 82%, rgba(30,58,95,0.45), transparent 55%)',
-          }}
-        />
-        <div className="relative mx-auto grid max-w-[1360px] grid-cols-1 items-center gap-10 px-5 py-14 sm:px-8 lg:grid-cols-12 lg:py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, ease: [0.19, 1, 0.22, 1] }}
-            className="lg:col-span-6"
-          >
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/5 px-3 py-1 font-mono-num text-[11px] text-slate-300">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              North Cyprus B2B Automotive Network · 4 Galleries Online
+      {/* Hero */}
+      <section className="border-b border-[var(--border-subtle)]">
+        <div className="mx-auto grid max-w-[1240px] grid-cols-1 gap-10 px-5 pb-14 pt-12 sm:px-8 lg:grid-cols-12 lg:gap-12 lg:pt-16">
+          <div className="lg:col-span-5">
+            <div className="eyebrow">
+              {tr ? 'Kuzey Kıbrıs galerileri için' : 'For North Cyprus vehicle galleries'}
             </div>
-
-            <h1 className="mt-5 font-display text-4xl font-extrabold leading-[1.08] tracking-tight text-white sm:text-5xl">
-              {lang === 'tr'
-                ? 'Araç Yaşam Döngüsü, AI Ekspertiz ve Canlı B2B İhale Tek Platformda.'
-                : 'Vehicle Lifecycle, AI Vision Inspection & Sub-15ms Live Auctions.'}
+            <h1 className="mt-4 text-balance text-[34px] font-semibold leading-[1.1] tracking-[-0.03em] sm:text-[40px]">
+              {tr
+                ? 'Ekspertizden ihaleye, bir aracın tüm yolu.'
+                : 'From inspection to auction, one record per car.'}
             </h1>
-
-            <p className="mt-4 max-w-[58ch] text-base leading-relaxed text-slate-300">
-              {lang === 'tr'
-                ? 'KKTC otomobil galerileri için geliştirilen çok kiracılı platform: ISO 3779 VIN çözme, 8 açılı çevrimdışı saha ekspertizi, YOLOv8 hasar tespiti, açıklanabilir değerleme ve atomik WebSocket ihale odaları.'
-                : 'Multi-tenant infrastructure built for North Cyprus vehicle galleries: ISO 3779 VIN decoding, offline-resilient 8-angle mobile capture, YOLOv8 panel damage detection, transparent market valuation, and zero-collision WebSocket bidding.'}
+            <p className="mt-5 max-w-[46ch] text-[15px] leading-relaxed text-[var(--ink-secondary)]">
+              {tr
+                ? 'Galeriler aracı VIN ile kaydeder, eksper sahada 8 açıdan çeker, yapay zekâ hasarı işaretler ve araç doğrulanmış alıcılara canlı ihaleyle satılır.'
+                : 'Galleries register a car by VIN, an inspector photographs it on site, the model flags damage, and verified dealers buy it in a live auction.'}
             </p>
 
-            {/* Concrete Performance Metrics Strip from SRS */}
-            <div className="mt-7 grid grid-cols-3 gap-3 border-y border-white/10 py-4">
-              <div>
-                <div className="font-mono-num text-2xl font-bold text-white">9.4 ms</div>
-                <div className="text-[11px] text-slate-400">p99 Bid Latency (&lt;15 ms)</div>
-              </div>
-              <div>
-                <div className="font-mono-num text-2xl font-bold text-[#f28c28]">2.8 s</div>
-                <div className="text-[11px] text-slate-400">YOLOv8 Inference (≤4 s)</div>
-              </div>
-              <div>
-                <div className="font-mono-num text-2xl font-bold text-emerald-400">0</div>
-                <div className="text-[11px] text-slate-400">Duplicate Bids Accepted</div>
-              </div>
-            </div>
-
-            <div className="mt-7 flex flex-wrap gap-3">
+            <div className="mt-7 flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => handleRoleLaunch('user-ayse')}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#ea6a12] px-5 py-3 text-sm font-semibold text-white transition-transform hover:bg-[#d45b0a] active:scale-[0.97]"
+                className={buttonClass('primary', 'lg')}
               >
-                {lang === 'tr' ? 'Galeri Yöneticisi Olarak Aç' : 'Launch Gallery Manager'}
+                {tr ? 'Galeri panelini aç' : 'Open gallery workspace'}
                 <ArrowRight className="h-4 w-4" />
               </button>
               <button
                 type="button"
                 onClick={() => handleRoleLaunch('user-kemal')}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/12"
+                className={buttonClass('secondary', 'lg')}
               >
-                <Smartphone className="h-4 w-4 text-[#f28c28]" />
-                {lang === 'tr' ? 'Mobil Ekspertiz Uygulaması' : 'Open Inspector Mobile App'}
+                {tr ? 'Eksper uygulaması' : 'Inspector app'}
               </button>
             </div>
-          </motion.div>
 
-          {/* Right Live Interactive VehicleStage Preview */}
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.1, ease: [0.19, 1, 0.22, 1] }}
-            className="lg:col-span-6"
-          >
+            <dl className="mt-10 grid grid-cols-3 border-t border-[var(--border-strong)]">
+              {METRICS.map((m, i) => (
+                <div
+                  key={m.value}
+                  className={`pt-4 ${i > 0 ? 'border-l border-[var(--border-subtle)] pl-4' : 'pr-4'}`}
+                >
+                  <dd className="font-mono-num text-2xl font-medium tracking-tight">{m.value}</dd>
+                  <dt className="mt-1 text-xs leading-snug text-[var(--ink-secondary)]">{m.label[lang]}</dt>
+                  <div className="mt-1 font-mono-num text-[10px] text-[var(--ink-muted)]">{m.target}</div>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="lg:col-span-7">
             <VehicleStage
               make="BMW"
               model="320d M-Sport"
               year={2016}
               bodyType="Saloon"
-              accentColor="#334155"
+              accentColor="#4b5563"
               damages={HERO_DAMAGES}
               scanning
               plateBlur
             />
-            <div className="mt-3 grid grid-cols-3 gap-2.5 text-xs">
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                <div className="text-[10px] uppercase tracking-wider text-slate-400">AI Valuation</div>
-                <div className="mt-0.5 font-mono-num text-base font-bold text-white">£12,600</div>
+            <div className="mt-2 grid grid-cols-3 divide-x divide-[var(--border-subtle)] rounded-[var(--r-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] text-xs">
+              <div className="px-4 py-3">
+                <div className="text-[var(--ink-muted)]">{tr ? 'AI değerleme' : 'AI valuation'}</div>
+                <div className="mt-0.5 font-mono-num text-[15px] font-medium">£12,600</div>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                <div className="text-[10px] uppercase tracking-wider text-slate-400">Live Highest Bid</div>
-                <div className="mt-0.5 font-mono-num text-base font-bold text-emerald-400">£12,900</div>
+              <div className="px-4 py-3">
+                <div className="text-[var(--ink-muted)]">{tr ? 'En yüksek teklif' : 'Highest bid'}</div>
+                <div className="mt-0.5 font-mono-num text-[15px] font-medium text-[var(--success)]">£12,900</div>
               </div>
-              <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
-                <div className="text-[10px] uppercase tracking-wider text-slate-400">Active Room</div>
-                <div className="mt-0.5 font-mono-num text-base font-bold text-[#f28c28]">14 Bidders</div>
+              <div className="px-4 py-3">
+                <div className="text-[var(--ink-muted)]">{tr ? 'Odada' : 'In room'}</div>
+                <div className="mt-0.5 font-mono-num text-[15px] font-medium">
+                  14 {tr ? 'alıcı' : 'dealers'}
+                </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Role-Based 1-Click Demo Launchers + Real JWT Login */}
-      <section className="mx-auto max-w-[1360px] px-5 py-12 sm:px-8">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
+      {/* How it works */}
+      <section className="border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+        <ol className="mx-auto grid max-w-[1240px] grid-cols-1 px-5 sm:grid-cols-2 sm:px-8 lg:grid-cols-4">
+          {STEPS.map((s, i) => (
+            <li
+              key={s.n}
+              className={`py-7 lg:pr-6 ${i > 0 ? 'lg:border-l lg:border-[var(--border-subtle)] lg:pl-6' : ''}`}
+            >
+              <div className="font-mono-num text-xs text-[var(--brand)]">{s.n}</div>
+              <div className="mt-2 text-[15px] font-semibold">{s.title[lang]}</div>
+              <p className="mt-1 text-[13px] leading-relaxed text-[var(--ink-secondary)]">{s.body[lang]}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* Roles + sign in */}
+      <section className="mx-auto max-w-[1240px] px-5 py-14 sm:px-8">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
           <div className="lg:col-span-8">
-            <h2 className="font-display text-xl font-bold text-white">
-              {lang === 'tr' ? 'Rol Bazlı Hızlı Demo Girişi (Multi-Tenant RBAC)' : 'Instant Role Launchers (Multi-Tenant RBAC)'}
-            </h2>
-            <p className="mt-1 text-sm text-slate-400">
-              {lang === 'tr'
-                ? 'Her kart gerçek bir HS256 JWT (tenant_id + role) üretir ve ilgili ekranı açar.'
-                : 'Each card issues a signed RFC 7519 JWT carrying tenant_id and role claims and opens that workspace.'}
+            <h2 className="text-xl font-semibold">{tr ? 'Bir rolle giriş yap' : 'Sign in as a role'}</h2>
+            <p className="mt-1 text-[13px] text-[var(--ink-secondary)]">
+              {tr
+                ? 'Her satır, kiracı ve rol bilgisini taşıyan gerçek bir JWT üretir.'
+                : 'Each row issues a real JWT carrying the tenant and role claims.'}
             </p>
 
-            <div className="mt-5 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
-              {[
-                {
-                  id: 'user-ayse',
-                  role: 'GALLERY MANAGER',
-                  name: 'Ayşe Kaya',
-                  tenant: 'Lefkoşa Auto Gallery',
-                  desc: 'Manage fleet inventory, review AI valuations, override prices, schedule auctions & export reports.',
-                  icon: Building2,
-                },
-                {
-                  id: 'user-mehmet',
-                  role: 'WHOLESALE DEALER',
-                  name: 'Mehmet Demir',
-                  tenant: 'Girne Motors',
-                  desc: 'Join live WebSocket auction rooms, inspect AI damage reports, place atomic bids & win hand-over PDFs.',
-                  icon: Gavel,
-                },
-                {
-                  id: 'user-kemal',
-                  role: 'FIELD INSPECTOR (MOBILE)',
-                  name: 'Kemal Arslan',
-                  tenant: 'Lefkoşa Auto Gallery',
-                  desc: '3-step mobile wizard: ISO 3779 VIN scan, 8-angle offline chunked upload & YOLOv8 human-in-the-loop review.',
-                  icon: ScanLine,
-                },
-                {
-                  id: 'user-admin',
-                  role: 'PLATFORM ADMIN',
-                  name: 'Tolga O. Falay',
-                  tenant: 'DriveHub Platform Ops',
-                  desc: 'Govern galleries, verify wholesale dealers, inspect append-only audit logs & OpenAPI 3.1 contracts.',
-                  icon: ShieldCheck,
-                },
-              ].map((card) => {
-                const Icon = card.icon;
-                return (
+            <ul className="mt-5 divide-y divide-[var(--border-subtle)] rounded-[var(--r-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+              {ROLES.map((r) => (
+                <li key={r.id}>
                   <button
-                    key={card.id}
                     type="button"
-                    disabled={loadingRole === card.id}
-                    onClick={() => handleRoleLaunch(card.id)}
-                    className="group flex flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-left transition-all hover:border-[#f28c28]/50 hover:bg-white/[0.06] active:scale-[0.99]"
+                    disabled={loadingRole !== null}
+                    onClick={() => handleRoleLaunch(r.id)}
+                    className="group grid w-full grid-cols-[1fr_auto] items-center gap-4 px-5 py-4 text-left transition-colors duration-100 hover:bg-[var(--bg-hover)] disabled:opacity-60 sm:grid-cols-[180px_1fr_auto]"
                   >
                     <div>
-                      <div className="flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-[#ea6a12]/15 px-2.5 py-1 font-mono-num text-[10px] font-bold text-[#f28c28]">
-                          <Icon className="h-3.5 w-3.5" />
-                          {card.role}
-                        </span>
-                        <ArrowRight className="h-4 w-4 text-slate-500 transition-transform group-hover:translate-x-0.5 group-hover:text-[#f28c28]" />
-                      </div>
-                      <div className="mt-3 font-display text-base font-bold text-white">
-                        {card.name}{' '}
-                        <span className="font-sans text-xs font-normal text-slate-400">
-                          · {card.tenant}
-                        </span>
-                      </div>
-                      <p className="mt-1.5 text-xs leading-relaxed text-slate-400">{card.desc}</p>
+                      <div className="text-[13px] font-semibold">{r.name}</div>
+                      <div className="mt-0.5 text-xs text-[var(--ink-muted)]">{r.role[lang]}</div>
                     </div>
+                    <div className="hidden min-w-0 sm:block">
+                      <div className="text-[13px] text-[var(--ink-secondary)]">{r.desc[lang]}</div>
+                      <div className="mt-0.5 font-mono-num text-[11px] text-[var(--ink-muted)]">{r.tenant}</div>
+                    </div>
+                    {loadingRole === r.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-[var(--ink-muted)]" />
+                    ) : (
+                      <ArrowUpRight className="h-4 w-4 text-[var(--ink-muted)] transition-[color,transform] duration-150 group-hover:-translate-y-px group-hover:translate-x-px group-hover:text-[var(--brand)]" />
+                    )}
                   </button>
-                );
-              })}
-            </div>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          {/* Standard JWT Login Card (UC1) */}
           <div className="lg:col-span-4">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6">
-              <div className="flex items-center gap-2 text-sm font-bold text-white">
-                <Lock className="h-4 w-4 text-[#f28c28]" />
-                Multi-Tenant Sign In (UC1)
-              </div>
-              <p className="mt-1 text-xs text-slate-400">
-                Or authenticate directly with email &amp; password (lockout after 5 failed attempts · REQ-1.4).
-              </p>
+            <h2 className="text-xl font-semibold">{tr ? 'E-posta ile giriş' : 'Sign in with email'}</h2>
+            <p className="mt-1 text-[13px] text-[var(--ink-secondary)]">
+              {tr ? '5 hatalı denemeden sonra hesap kilitlenir.' : 'Accounts lock after 5 failed attempts.'}
+            </p>
 
-              <form onSubmit={handleManualLogin} className="mt-4 space-y-3">
-                <div>
-                  <label htmlFor="login-email" className="block text-[11px] font-medium text-slate-300">
-                    Work Email
-                  </label>
-                  <input
-                    id="login-email"
-                    type="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-white/12 bg-[#0b1220] px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-[#f28c28] focus:outline-none"
-                    required
-                  />
-                </div>
-                <div>
-                  <label htmlFor="login-password" className="block text-[11px] font-medium text-slate-300">
-                    Password
-                  </label>
-                  <input
-                    id="login-password"
-                    type="password"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-white/12 bg-[#0b1220] px-3 py-2 text-sm text-white focus:border-[#f28c28] focus:outline-none"
-                    required
-                  />
-                </div>
+            <form
+              onSubmit={handleManualLogin}
+              className="mt-5 space-y-4 rounded-[var(--r-lg)] border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5"
+            >
+              <Field label={tr ? 'İş e-postası' : 'Work email'} htmlFor="login-email">
+                <input
+                  id="login-email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={inputClass}
+                  required
+                />
+              </Field>
+              <Field label={tr ? 'Parola' : 'Password'} htmlFor="login-password">
+                <input
+                  id="login-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={inputClass}
+                  required
+                />
+              </Field>
 
-                {loginError && (
-                  <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
-                    {loginError}
-                  </div>
-                )}
+              {loginError && (
+                <p role="alert" className="text-xs text-[var(--danger)]">
+                  {loginError}
+                </p>
+              )}
 
-                <button
-                  type="submit"
-                  className="w-full rounded-xl bg-white py-2.5 text-sm font-semibold text-[#0b1220] transition-colors hover:bg-slate-200"
-                >
-                  Sign In with JWT
-                </button>
-              </form>
-
-              <div className="mt-4 border-t border-white/10 pt-3 text-[11px] text-slate-400">
-                <div className="flex items-center gap-1.5 font-mono-num text-[10px] text-slate-300">
-                  <Cpu className="h-3.5 w-3.5 text-[#f28c28]" />
-                  Team · Tolga Osman Falay · Davut İnanlar · Safa Burak Şenbahar · Eren Manavoğlu
-                </div>
-              </div>
-            </div>
+              <button type="submit" disabled={signingIn} className={buttonClass('dark', 'md', 'w-full')}>
+                {signingIn && <Loader2 className="h-4 w-4 animate-spin" />}
+                {tr ? 'Giriş yap' : 'Sign in'}
+              </button>
+            </form>
           </div>
         </div>
       </section>
+
+      <footer className="border-t border-[var(--border-subtle)]">
+        <div className="mx-auto flex max-w-[1240px] flex-wrap items-center justify-between gap-2 px-5 py-6 text-xs text-[var(--ink-muted)] sm:px-8">
+          <span>EMU CMSE473 · Group 17 · Project #15</span>
+          <span>Tolga Osman Falay · Davut İnanlar · Safa Burak Şenbahar · Eren Manavoğlu</span>
+        </div>
+      </footer>
     </div>
   );
 };
-

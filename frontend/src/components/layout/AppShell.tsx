@@ -1,44 +1,64 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart3,
   Bell,
   Car,
-  Gavel,
-  Globe,
+  LayoutTemplate,
   LogOut,
   Menu,
-  Moon,
   PlusCircle,
   Radio,
   Shield,
   Smartphone,
-  Sparkles,
-  Sun,
   X,
 } from 'lucide-react';
 import { Role } from '@shared/contracts';
 import { RouteId, useApp } from '@/context/AppContext';
 import { t } from '@/lib/i18n';
+import { LanguageMenu } from '@/components/ui/LanguageMenu';
+import { useDismiss } from '@/components/ui/useDismiss';
 
 interface NavItem {
   id: RouteId;
   labelKey: Parameters<typeof t>[1];
   icon: React.FC<{ className?: string }>;
   roles: Role[];
-  badge?: string;
+  live?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'inventory', labelKey: 'navInventory', icon: Car, roles: ['GALLERY_MANAGER', 'PLATFORM_ADMIN'] },
   { id: 'inspector', labelKey: 'navInspector', icon: Smartphone, roles: ['INSPECTOR', 'GALLERY_MANAGER', 'PLATFORM_ADMIN'] },
   { id: 'schedule', labelKey: 'navSchedule', icon: PlusCircle, roles: ['GALLERY_MANAGER', 'PLATFORM_ADMIN'] },
-  { id: 'live-room', labelKey: 'navLiveRoom', icon: Radio, roles: ['DEALER', 'GALLERY_MANAGER', 'PLATFORM_ADMIN'], badge: 'LIVE' },
+  { id: 'live-room', labelKey: 'navLiveRoom', icon: Radio, roles: ['DEALER', 'GALLERY_MANAGER', 'PLATFORM_ADMIN'], live: true },
   { id: 'reports', labelKey: 'navReports', icon: BarChart3, roles: ['GALLERY_MANAGER', 'PLATFORM_ADMIN'] },
   { id: 'admin', labelKey: 'navAdmin', icon: Shield, roles: ['PLATFORM_ADMIN', 'GALLERY_MANAGER'] },
 ];
+
+const ROLE_LABEL: Record<Role, { en: string; tr: string }> = {
+  GALLERY_MANAGER: { en: 'Gallery manager', tr: 'Galeri yöneticisi' },
+  INSPECTOR: { en: 'Field inspector', tr: 'Saha eksperi' },
+  DEALER: { en: 'Wholesale dealer', tr: 'Toptan alıcı' },
+  PLATFORM_ADMIN: { en: 'Platform admin', tr: 'Platform yöneticisi' },
+};
+
+const NOTIFICATIONS = [
+  { title: 'AI report ready · Nissan Qashqai', detail: '2.6 s · 1 scratch (87%) · £11,200', time: '2m' },
+  { title: 'Reserve met · BMW 320d 2016', detail: '£12,900 with 14 bidders in room', time: '9m' },
+  { title: 'Hand-over certificate ready', detail: 'Mazda CX-5 2018 settled at £15,200', time: '1h' },
+];
+
+export const Wordmark: React.FC<{ sub?: string }> = ({ sub }) => (
+  <div className="flex items-baseline gap-2">
+    <span className="text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink-primary)]">
+      drive<span className="text-[var(--brand)]">hub</span>
+    </span>
+    {sub && <span className="hidden font-mono-num text-[10px] sm:inline uppercase tracking-wider text-[var(--ink-muted)]">{sub}</span>}
+  </div>
+);
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const {
@@ -46,11 +66,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     route,
     setRoute,
     lang,
-    setLang,
     currency,
     setCurrency,
-    darkMode,
-    toggleDarkMode,
     logout,
     toasts,
     dismissToast,
@@ -58,81 +75,69 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const closeNotif = useCallback(() => setNotifOpen(false), []);
+  useDismiss(notifRef, notifOpen, closeNotif);
 
   const visibleNav = user
     ? NAV_ITEMS.filter((item) => item.roles.includes(user.role))
     : NAV_ITEMS;
 
   const sidebarContent = (
-    <div className="flex h-full flex-col bg-[var(--bg-sidebar)] text-slate-300">
-      {/* Brand Header */}
-      <div className="flex items-center justify-between border-b border-white/8 px-5 py-4">
-        <button
-          type="button"
-          onClick={() => setRoute('landing')}
-          className="flex items-center gap-2.5 text-left"
-        >
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#ea6a12] to-[#c2410c] text-white shadow-sm">
-            <Gavel className="h-4.5 w-4.5" />
-          </div>
-          <div>
-            <div className="font-display text-lg font-extrabold leading-none tracking-tight text-white">
-              Drive<span className="text-[#f28c28]">Hub</span>
-            </div>
-            <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-400">
-              KKTC · CMSE473
-            </div>
-          </div>
+    <div className="flex h-full flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-sidebar)]">
+      <div className="flex h-14 items-center justify-between border-b border-[var(--border-subtle)] px-5">
+        <button type="button" onClick={() => setRoute('landing')} className="text-left">
+          <Wordmark sub="KKTC" />
         </button>
         <button
           type="button"
           onClick={() => setMobileMenuOpen(false)}
-          className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white lg:hidden"
+          className="rounded-[var(--r-sm)] p-1.5 text-[var(--ink-muted)] hover:bg-[var(--bg-hover)] lg:hidden"
           aria-label="Close navigation"
         >
-          <X className="h-5 w-5" />
+          <X className="h-4 w-4" />
         </button>
       </div>
 
-      {/* Navigation Links */}
-      <nav className="flex-1 space-y-1 px-3 py-4" aria-label="Primary Navigation">
-        {visibleNav.map((item) => {
-          const Icon = item.icon;
-          const active = route === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => {
-                setRoute(item.id);
-                setMobileMenuOpen(false);
-              }}
-              className={`relative flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
-                active
-                  ? 'text-white'
-                  : 'text-slate-400 hover:bg-[var(--bg-sidebar-hover)] hover:text-slate-100'
-              }`}
-            >
-              {active && (
-                <motion.span
-                  layoutId="sidebar-active-pill"
-                  transition={{ type: 'spring', stiffness: 460, damping: 36 }}
-                  className="absolute inset-0 rounded-xl border border-[#f28c28]/30 bg-[var(--bg-sidebar-active)]"
-                />
-              )}
-              <Icon className={`relative z-10 h-4.5 w-4.5 ${active ? 'text-[#f28c28]' : ''}`} />
-              <span className="relative z-10 flex-1 text-left">{t(lang, item.labelKey)}</span>
-              {item.badge && (
-                <span className="relative z-10 inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 font-mono-num text-[10px] font-semibold text-emerald-300">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      <nav className="flex-1 px-3 py-4" aria-label="Primary">
+        <div className="eyebrow px-2.5 pb-2">{lang === 'tr' ? 'Çalışma alanı' : 'Workspace'}</div>
+        <ul className="space-y-px">
+          {visibleNav.map((item) => {
+            const Icon = item.icon;
+            const active = route === item.id;
+            return (
+              <li key={item.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRoute(item.id);
+                    setMobileMenuOpen(false);
+                  }}
+                  aria-current={active ? 'page' : undefined}
+                  className={`relative flex h-8 w-full items-center gap-2.5 rounded-[var(--r-md)] px-2.5 text-[13px] transition-colors duration-100 ${
+                    active
+                      ? 'bg-[var(--bg-sidebar-active)] font-medium text-[var(--ink-primary)] shadow-[inset_0_0_0_1px_var(--border-subtle)]'
+                      : 'text-[var(--ink-secondary)] hover:bg-[var(--bg-sidebar-hover)] hover:text-[var(--ink-primary)]'
+                  }`}
+                >
+                  {active && (
+                    <span className="absolute -left-3 top-1.5 bottom-1.5 w-[2px] rounded-r bg-[var(--brand)]" />
+                  )}
+                  <Icon className={`h-4 w-4 ${active ? 'text-[var(--brand)]' : 'text-[var(--ink-muted)]'}`} />
+                  <span className="flex-1 text-left">{t(lang, item.labelKey)}</span>
+                  {item.live && (
+                    <span className="flex items-center gap-1 font-mono-num text-[10px] font-medium text-[var(--danger)]">
+                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--danger)]" />
+                      LIVE
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
 
-        <div className="my-3 border-t border-white/8" />
+        <div className="mx-2.5 my-4 border-t border-[var(--border-subtle)]" />
 
         <button
           type="button"
@@ -140,69 +145,69 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
             setRoute('landing');
             setMobileMenuOpen(false);
           }}
-          className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-400 transition-colors hover:bg-white/5 hover:text-slate-100"
+          className="flex h-8 w-full items-center gap-2.5 rounded-[var(--r-md)] px-2.5 text-[13px] text-[var(--ink-secondary)] transition-colors duration-100 hover:bg-[var(--bg-sidebar-hover)] hover:text-[var(--ink-primary)]"
         >
-          <Sparkles className="h-4.5 w-4.5 text-[#f28c28]" />
+          <LayoutTemplate className="h-4 w-4 text-[var(--ink-muted)]" />
           <span>{t(lang, 'navLanding')}</span>
         </button>
       </nav>
 
-      {/* Tenant & Account Footer */}
       {user && (
-        <div className="border-t border-white/8 p-4">
-          <div className="rounded-xl border border-white/8 bg-white/[0.03] p-3">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-              {t(lang, 'tenantLabel')}
+        <div className="border-t border-[var(--border-subtle)] px-4 py-3.5">
+          <div className="eyebrow">{t(lang, 'tenantLabel')}</div>
+          <div className="mt-0.5 truncate text-[13px] font-medium text-[var(--ink-primary)]">{user.tenantName}</div>
+          <div className="mt-3 flex items-center gap-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--bg-surface-subtle)] font-mono-num text-[11px] font-semibold text-[var(--ink-secondary)] ring-1 ring-[var(--border-subtle)]">
+              {user.avatarInitials}
             </div>
-            <div className="mt-0.5 truncate text-xs font-semibold text-white">
-              {user.tenantName}
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[13px] font-medium text-[var(--ink-primary)]">{user.fullName}</div>
+              <div className="truncate text-[11px] text-[var(--ink-muted)]">{ROLE_LABEL[user.role][lang]}</div>
             </div>
-            <div className="mt-2 flex items-center justify-between border-t border-white/8 pt-2">
-              <div className="min-w-0">
-                <div className="truncate text-xs font-medium text-slate-200">{user.fullName}</div>
-                <div className="truncate font-mono-num text-[10px] text-[#f28c28]">
-                  {user.role}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={logout}
-                className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
-                title={t(lang, 'signOut')}
-                aria-label={t(lang, 'signOut')}
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={logout}
+              className="rounded-[var(--r-sm)] p-1.5 text-[var(--ink-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--ink-primary)]"
+              title={t(lang, 'signOut')}
+              aria-label={t(lang, 'signOut')}
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </div>
       )}
     </div>
   );
 
+  const toastBar: Record<string, string> = {
+    info: 'bg-[var(--info)]',
+    success: 'bg-[var(--success)]',
+    warning: 'bg-[var(--warning)]',
+    danger: 'bg-[var(--danger)]',
+  };
+
   return (
     <div className="flex min-h-dvh bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
-      {/* Desktop Sidebar */}
-      <aside className="no-print hidden w-64 shrink-0 lg:block">
+      <aside className="no-print hidden w-60 shrink-0 lg:block">
         <div className="sticky top-0 h-dvh">{sidebarContent}</div>
       </aside>
 
-      {/* Mobile Drawer */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex bg-black/60 backdrop-blur-xs lg:hidden"
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-50 flex bg-[var(--scrim)] lg:hidden"
             onClick={() => setMobileMenuOpen(false)}
           >
             <motion.div
-              initial={{ x: -270 }}
+              initial={{ x: -260 }}
               animate={{ x: 0 }}
-              exit={{ x: -270 }}
-              transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
-              className="h-full w-68"
+              exit={{ x: -260 }}
+              transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+              className="h-full w-64"
               onClick={(e) => e.stopPropagation()}
             >
               {sidebarContent}
@@ -211,36 +216,47 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         )}
       </AnimatePresence>
 
-      {/* Main Column */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top Bar */}
-        <header className="no-print sticky top-0 z-30 flex h-15 items-center justify-between gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)]/88 px-4 backdrop-blur-md sm:px-6">
+        <header className="no-print sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="rounded-lg border border-[var(--border-subtle)] p-2 text-[var(--ink-secondary)] hover:bg-[var(--bg-surface-subtle)] lg:hidden"
+              className="rounded-[var(--r-md)] border border-[var(--border-subtle)] p-1.5 text-[var(--ink-secondary)] hover:bg-[var(--bg-hover)] lg:hidden"
               aria-label="Open menu"
             >
-              <Menu className="h-4.5 w-4.5" />
+              <Menu className="h-4 w-4" />
             </button>
-            <div className="hidden items-center gap-2 text-xs text-[var(--ink-muted)] sm:flex">
-              <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-              <span className="font-mono-num">WSS RFC 6455 · JWT RBAC</span>
-            </div>
+            {user && (
+              <div className="hidden min-w-0 items-center gap-1.5 text-[13px] sm:flex">
+                <span className="truncate text-[var(--ink-muted)]">{user.tenantName}</span>
+                <span className="text-[var(--border-strong)]">/</span>
+                <span className="truncate font-medium text-[var(--ink-primary)]">
+                  {route === 'landing'
+                    ? t(lang, 'navLanding')
+                    : t(lang, NAV_ITEMS.find((n) => n.id === route)?.labelKey ?? 'navDashboard')}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Currency Switch (£ / ₺) */}
-            <div className="inline-flex rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface-subtle)] p-0.5 text-xs font-semibold">
+            {/* Currency */}
+            <div
+              role="radiogroup"
+              aria-label="Currency"
+              className="inline-flex h-8 items-center rounded-[var(--r-md)] border border-[var(--border-strong)] bg-[var(--bg-surface)] p-0.5 text-xs"
+            >
               {(['GBP', 'TRY'] as const).map((cur) => (
                 <button
                   key={cur}
                   type="button"
+                  role="radio"
+                  aria-checked={currency === cur}
                   onClick={() => setCurrency(cur)}
-                  className={`rounded-md px-2 py-1 transition-colors ${
+                  className={`h-full rounded-[3px] px-2 font-mono-num transition-colors duration-100 ${
                     currency === cur
-                      ? 'bg-[var(--bg-surface)] text-[var(--ink-primary)] shadow-[var(--shadow-xs)]'
+                      ? 'bg-[var(--bg-surface-subtle)] font-semibold text-[var(--ink-primary)]'
                       : 'text-[var(--ink-muted)] hover:text-[var(--ink-primary)]'
                   }`}
                 >
@@ -249,126 +265,85 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               ))}
             </div>
 
-            {/* Language Switch (EN / TR) */}
-            <button
-              type="button"
-              onClick={() => setLang(lang === 'en' ? 'tr' : 'en')}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2.5 py-1.5 text-xs font-semibold text-[var(--ink-secondary)] transition-colors hover:bg-[var(--bg-surface-subtle)]"
-              aria-label="Toggle language"
-            >
-              <Globe className="h-3.5 w-3.5" />
-              {lang.toUpperCase()}
-            </button>
+            <LanguageMenu />
 
-            {/* Dark Mode Toggle */}
-            <button
-              type="button"
-              onClick={toggleDarkMode}
-              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-1.5 text-[var(--ink-secondary)] transition-colors hover:bg-[var(--bg-surface-subtle)]"
-              aria-label="Toggle theme"
-            >
-              {darkMode ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4" />}
-            </button>
-
-            {/* Notifications Popover */}
-            <div className="relative">
+            {/* Notifications */}
+            <div ref={notifRef} className="relative">
               <button
                 type="button"
                 onClick={() => setNotifOpen((o) => !o)}
-                className="relative rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-1.5 text-[var(--ink-secondary)] transition-colors hover:bg-[var(--bg-surface-subtle)]"
-                aria-label="Notifications"
+                aria-expanded={notifOpen}
+                className="relative flex h-8 w-8 items-center justify-center rounded-[var(--r-md)] border border-[var(--border-strong)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] transition-colors hover:bg-[var(--bg-hover)]"
+                aria-label={t(lang, 'notifications')}
               >
                 <Bell className="h-4 w-4" />
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[var(--brand)] font-mono-num text-[10px] font-bold text-white">
-                  3
-                </span>
+                <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[var(--brand)]" />
               </button>
               <AnimatePresence>
                 {notifOpen && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.96, y: -4 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.96, y: -4 }}
-                    transition={{ duration: 0.16, ease: [0.23, 1, 0.32, 1] }}
-                    className="absolute right-0 mt-2 w-80 origin-top-right rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-lg)]"
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.14, ease: [0.23, 1, 0.32, 1] }}
+                    className="absolute right-0 mt-1 w-80 rounded-[var(--r-lg)] border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[var(--shadow-pop)]"
                   >
-                    <div className="mb-2 flex items-center justify-between px-1">
-                      <span className="text-xs font-bold uppercase tracking-wider text-[var(--ink-muted)]">
-                        Live Alerts
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setNotifOpen(false)}
-                        className="text-xs text-[var(--brand)] hover:underline"
-                      >
-                        Close
-                      </button>
+                    <div className="flex items-center justify-between border-b border-[var(--border-subtle)] px-4 py-2.5">
+                      <span className="text-[13px] font-semibold">{t(lang, 'notifications')}</span>
+                      <span className="font-mono-num text-[11px] text-[var(--ink-muted)]">{NOTIFICATIONS.length}</span>
                     </div>
-                    <div className="space-y-2 text-xs">
-                      <div className="rounded-xl bg-[var(--bg-surface-subtle)] p-2.5">
-                        <div className="font-semibold text-[var(--ink-primary)]">AI Report Ready · Nissan Qashqai</div>
-                        <div className="mt-0.5 text-[var(--ink-secondary)]">Analysed in 2.6 s · 1 scratch (87%) · £11,200</div>
-                      </div>
-                      <div className="rounded-xl bg-[var(--bg-surface-subtle)] p-2.5">
-                        <div className="font-semibold text-[var(--ink-primary)]">Live Auction Reserve Met</div>
-                        <div className="mt-0.5 text-[var(--ink-secondary)]">BMW 320d 2016 reached £12,900 (14 bidders)</div>
-                      </div>
-                      <div className="rounded-xl bg-[var(--bg-surface-subtle)] p-2.5">
-                        <div className="font-semibold text-[var(--ink-primary)]">Hand-Over Certificate Ready</div>
-                        <div className="mt-0.5 text-[var(--ink-secondary)]">Mazda CX-5 2018 settled at £15,200</div>
-                      </div>
-                    </div>
+                    <ul className="divide-y divide-[var(--border-subtle)]">
+                      {NOTIFICATIONS.map((n) => (
+                        <li key={n.title} className="flex gap-3 px-4 py-3 text-xs">
+                          <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--brand)]" />
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-[var(--ink-primary)]">{n.title}</div>
+                            <div className="mt-0.5 text-[var(--ink-secondary)]">{n.detail}</div>
+                          </div>
+                          <span className="font-mono-num text-[11px] text-[var(--ink-muted)]">{n.time}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
-
-            {user && (
-              <div className="hidden items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-subtle)] px-2.5 py-1 md:flex">
-                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[var(--navy)] font-mono-num text-[11px] font-bold text-white">
-                  {user.avatarInitials}
-                </div>
-                <div className="text-xs leading-tight">
-                  <div className="font-semibold text-[var(--ink-primary)]">{user.fullName}</div>
-                  <div className="text-[10px] text-[var(--ink-muted)]">{user.tenantName}</div>
-                </div>
-              </div>
-            )}
           </div>
         </header>
 
-        {/* Page Content */}
         <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 pb-24 sm:px-6 lg:px-8">
           {children}
         </main>
       </div>
 
-      {/* Toast Stack */}
-      <div className="no-print pointer-events-none fixed right-4 top-18 z-50 flex w-80 flex-col gap-2">
+      {/* Toasts */}
+      <div className="no-print pointer-events-none fixed right-4 top-16 z-50 flex w-80 flex-col gap-2">
         <AnimatePresence>
           {toasts.map((toast) => (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, y: -8, scale: 0.96 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.96 }}
+              layout
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, transition: { duration: 0.12 } }}
               transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-              className="pointer-events-auto flex items-start justify-between gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-3 shadow-[var(--shadow-md)]"
+              className="pointer-events-auto flex overflow-hidden rounded-[var(--r-md)] border border-[var(--border-strong)] bg-[var(--bg-elevated)] shadow-[var(--shadow-md)]"
             >
-              <div className="min-w-0 text-xs">
-                <div className="font-semibold text-[var(--ink-primary)]">{toast.title}</div>
-                {toast.detail && (
-                  <div className="mt-0.5 text-[var(--ink-secondary)]">{toast.detail}</div>
-                )}
+              <span className={`w-[3px] shrink-0 ${toastBar[toast.tone]}`} />
+              <div className="flex min-w-0 flex-1 items-start justify-between gap-2 px-3 py-2.5">
+                <div className="min-w-0 text-xs">
+                  <div className="font-medium text-[var(--ink-primary)]">{toast.title}</div>
+                  {toast.detail && <div className="mt-0.5 text-[var(--ink-secondary)]">{toast.detail}</div>}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => dismissToast(toast.id)}
+                  className="text-[var(--ink-muted)] hover:text-[var(--ink-primary)]"
+                  aria-label="Dismiss notification"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => dismissToast(toast.id)}
-                className="text-[var(--ink-muted)] hover:text-[var(--ink-primary)]"
-                aria-label="Dismiss notification"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
             </motion.div>
           ))}
         </AnimatePresence>
@@ -376,4 +351,3 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     </div>
   );
 };
-

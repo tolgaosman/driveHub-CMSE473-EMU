@@ -56,7 +56,7 @@ const INITIAL_AI_DAMAGES: DamageDetection[] = [
 ];
 
 export const InspectorMobileStudioPage: React.FC = () => {
-  const { token, currency, exchangeRate, setRoute, bumpDataVersion, pushToast } = useApp();
+  const { token, lang, currency, exchangeRate, setRoute, bumpDataVersion, pushToast } = useApp();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [netMode, setNetMode] = useState<NetMode>('5G');
@@ -205,18 +205,20 @@ export const InspectorMobileStudioPage: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header + Network Simulator Toggle */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[var(--border-subtle)] pb-5">
         <div>
-          <h1 className="font-display text-2xl font-extrabold text-[var(--ink-primary)] sm:text-3xl">
-            Field Inspector Mobile Studio (UC2–UC7)
+          <h1 className="text-[22px] font-semibold leading-tight text-[var(--ink-primary)]">
+            {lang === 'tr' ? 'Saha ekspertizi' : 'Field inspection'}
           </h1>
-          <p className="mt-1 text-sm text-[var(--ink-secondary)]">
-            Interactive 3-step React Native field workflow with ISO 3779 VIN scan, offline resumable chunk upload, and YOLOv8 review.
+          <p className="mt-1.5 max-w-[70ch] text-[13px] text-[var(--ink-secondary)]">
+            {lang === 'tr'
+              ? 'Eksperin telefonundaki 3 adımlı akış: VIN okutma, çevrimdışı devam eden 8 açı yükleme ve hasar onayı.'
+              : 'The inspector’s 3-step phone flow: VIN scan, 8-angle upload that resumes offline, and damage review.'}
           </p>
         </div>
 
         {/* Network Condition Simulator */}
-        <div className="flex items-center gap-1 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] p-1 text-xs font-semibold">
+        <div role="radiogroup" aria-label="Network" className="flex h-8 items-center rounded-[var(--r-md)] border border-[var(--border-strong)] bg-[var(--bg-surface)] p-0.5 text-xs">
           {(
             [
               { id: '5G', label: '5G Online', icon: Wifi },
@@ -230,18 +232,26 @@ export const InspectorMobileStudioPage: React.FC = () => {
               <button
                 key={item.id}
                 type="button"
+                role="radio"
+                aria-checked={active}
                 onClick={() => setNetMode(item.id)}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 transition-colors ${
+                className={`inline-flex h-full items-center gap-1.5 rounded-[3px] px-2.5 transition-colors duration-100 ${
                   active
-                    ? item.id === 'OFFLINE'
-                      ? 'bg-red-600 text-white'
-                      : item.id === 'WEAK_3G'
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-emerald-600 text-white'
-                    : 'text-[var(--ink-secondary)] hover:bg-[var(--bg-surface-subtle)]'
+                    ? 'bg-[var(--bg-surface-subtle)] font-medium text-[var(--ink-primary)]'
+                    : 'text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]'
                 }`}
               >
-                <Icon className="h-3.5 w-3.5" />
+                <Icon
+                  className={`h-3.5 w-3.5 ${
+                    !active
+                      ? 'text-[var(--ink-muted)]'
+                      : item.id === 'OFFLINE'
+                      ? 'text-[var(--danger)]'
+                      : item.id === 'WEAK_3G'
+                      ? 'text-[var(--warning)]'
+                      : 'text-[var(--success)]'
+                  }`}
+                />
                 {item.label}
               </button>
             );
@@ -253,33 +263,33 @@ export const InspectorMobileStudioPage: React.FC = () => {
       <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
         {/* Realistic Mobile Device Frame (Upgraded m1 & m2) */}
         <div className="flex justify-center lg:col-span-5">
-          <div className="w-full max-w-[390px] overflow-hidden rounded-[40px] border-[10px] border-[#0f172a] bg-[#f8fafc] text-slate-900 shadow-[var(--shadow-lg)]">
+          <div className="w-full max-w-[390px] overflow-hidden rounded-[40px] border-[8px] border-[#1a1a1a] bg-[var(--bg-canvas)] text-[var(--ink-primary)]">
             {/* Phone Status Bar */}
-            <div className="flex items-center justify-between bg-[#142542] px-6 py-2.5 text-[11px] font-semibold text-white">
+            <div className="flex items-center justify-between bg-[var(--bg-surface)] px-6 py-2.5 text-[11px] font-semibold text-[var(--ink-primary)]">
               <span className="font-mono-num">09:41</span>
               <span className="flex items-center gap-1.5 font-mono-num">
                 {netMode === 'OFFLINE' ? (
-                  <span className="text-red-300">OFFLINE</span>
+                  <span className="text-[var(--danger)]">OFFLINE</span>
                 ) : netMode === 'WEAK_3G' ? (
-                  <span className="text-amber-300">3G · 1 bar</span>
+                  <span className="text-[var(--warning)]">3G · 1 bar</span>
                 ) : (
-                  <span className="text-emerald-300">5G · 82%</span>
+                  <span className="text-[var(--success)]">5G · 82%</span>
                 )}
               </span>
             </div>
 
             {/* Mobile App Bar */}
-            <div className="bg-[#142542] px-5 pb-4 pt-1 text-white">
+            <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] px-5 pb-4 pt-1">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-display text-base font-bold">
+                  <div className="text-base font-semibold">
                     {step === 1
                       ? 'New Inspection'
                       : step === 2
                       ? 'Capture 8 Angles'
                       : 'AI Damage Report'}
                   </div>
-                  <div className="text-[11px] text-slate-300">
+                  <div className="text-[11px] text-[var(--ink-muted)]">
                     Step {step} of 3 · {decoded ? `${decoded.make} ${decoded.model} ${decoded.year}` : 'VIN Scan'}
                   </div>
                 </div>
@@ -289,8 +299,8 @@ export const InspectorMobileStudioPage: React.FC = () => {
                       key={s}
                       type="button"
                       onClick={() => setStep(s as 1 | 2 | 3)}
-                      className={`h-2 w-6 rounded-full transition-colors ${
-                        step === s ? 'bg-[#f28c28]' : 'bg-white/25'
+                      className={`h-1.5 w-6 rounded-full transition-colors ${
+                        step === s ? 'bg-[var(--brand)]' : 'bg-[var(--border-strong)]'
                       }`}
                       aria-label={`Step ${s}`}
                     />
@@ -308,7 +318,7 @@ export const InspectorMobileStudioPage: React.FC = () => {
                   className="space-y-3"
                 >
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-500">
+                    <label className="text-[11px] font-semibold text-[var(--ink-muted)]">
                       VIN (17 characters · ISO 3779)
                     </label>
                     <div className="mt-1 flex gap-1.5">
@@ -317,19 +327,19 @@ export const InspectorMobileStudioPage: React.FC = () => {
                         maxLength={17}
                         value={vin}
                         onChange={(e) => setVin(e.target.value.toUpperCase())}
-                        className="flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2.5 font-mono-num text-xs font-bold uppercase text-slate-900"
+                        className="flex-1 rounded-md border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2.5 font-mono-num text-xs font-semibold uppercase text-[var(--ink-primary)]"
                       />
                       <button
                         type="button"
                         onClick={() => setVin('WAUZZZ8V4KA098765')}
-                        className="inline-flex items-center gap-1 rounded-xl bg-amber-500/15 px-3 text-xs font-bold text-[#ea6a12]"
+                        className="inline-flex items-center gap-1 rounded-md bg-[var(--warning-bg)] px-3 text-xs font-semibold text-[var(--brand)]"
                       >
                         <ScanLine className="h-3.5 w-3.5" />
                         Scan
                       </button>
                     </div>
                     {!vinCheck.valid && (
-                      <p className="mt-1 text-[11px] font-medium text-red-600">{vinCheck.error}</p>
+                      <p className="mt-1 text-[11px] font-medium text-[var(--danger)]">{vinCheck.error}</p>
                     )}
                   </div>
 
@@ -340,7 +350,7 @@ export const InspectorMobileStudioPage: React.FC = () => {
                         key={sample}
                         type="button"
                         onClick={() => setVin(sample)}
-                        className="rounded-lg border border-slate-200 bg-white px-2 py-1 font-mono-num text-[10px] text-slate-600 hover:border-[#ea6a12]"
+                        className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] px-2 py-1 font-mono-num text-[10px] text-[var(--ink-secondary)] hover:border-[var(--brand)]"
                       >
                         {sample.slice(0, 6)}…{sample.slice(-4)}
                       </button>
@@ -348,30 +358,30 @@ export const InspectorMobileStudioPage: React.FC = () => {
                   </div>
 
                   {decoded && (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-2xs">
+                    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3.5 ">
                       <div className="mb-2 flex items-center justify-between">
-                        <span className="font-display text-xs font-bold text-slate-900">
+                        <span className="text-xs font-semibold text-[var(--ink-primary)]">
                           Decoded Vehicle
                         </span>
-                        <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-mono-num text-[10px] font-bold text-emerald-700">
+                        <span className="rounded-full bg-[var(--success-bg)] px-2 py-0.5 font-mono-num text-[10px] font-semibold text-[var(--success)]">
                           VIN valid
                         </span>
                       </div>
-                      <div className="divide-y divide-dashed divide-slate-200 text-xs">
+                      <div className="divide-y divide-dashed divide-[var(--border-subtle)] text-xs">
                         <div className="flex justify-between py-1.5">
-                          <span className="text-slate-500">Make</span>
+                          <span className="text-[var(--ink-muted)]">Make</span>
                           <strong>{decoded.make}</strong>
                         </div>
                         <div className="flex justify-between py-1.5">
-                          <span className="text-slate-500">Model</span>
+                          <span className="text-[var(--ink-muted)]">Model</span>
                           <strong>{decoded.model}</strong>
                         </div>
                         <div className="flex justify-between py-1.5">
-                          <span className="text-slate-500">Year</span>
+                          <span className="text-[var(--ink-muted)]">Year</span>
                           <strong className="font-mono-num">{decoded.year}</strong>
                         </div>
                         <div className="flex justify-between py-1.5">
-                          <span className="text-slate-500">Engine</span>
+                          <span className="text-[var(--ink-muted)]">Engine</span>
                           <strong>{decoded.engine}</strong>
                         </div>
                       </div>
@@ -379,22 +389,22 @@ export const InspectorMobileStudioPage: React.FC = () => {
                   )}
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-500">Mileage (km)</label>
+                    <label className="text-[11px] font-semibold text-[var(--ink-muted)]">Mileage (km)</label>
                     <input
                       type="number"
                       value={mileage}
                       onChange={(e) => setMileage(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 font-mono-num text-xs font-bold text-slate-900"
+                      className="mt-1 w-full rounded-md border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2 font-mono-num text-xs font-semibold text-[var(--ink-primary)]"
                     />
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-semibold text-slate-500">Inspector Notes</label>
+                    <label className="text-[11px] font-semibold text-[var(--ink-muted)]">Inspector Notes</label>
                     <textarea
                       rows={2}
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900"
+                      className="mt-1 w-full rounded-md border border-[var(--border-strong)] bg-[var(--bg-surface)] px-3 py-2 text-xs text-[var(--ink-primary)]"
                     />
                   </div>
 
@@ -402,7 +412,7 @@ export const InspectorMobileStudioPage: React.FC = () => {
                     type="button"
                     disabled={!decoded}
                     onClick={() => setStep(2)}
-                    className="w-full rounded-xl bg-[#ea6a12] py-3 text-xs font-bold text-white shadow-sm transition-transform active:scale-[0.98] disabled:opacity-45"
+                    className="w-full rounded-md bg-[var(--brand)] py-3 text-xs font-semibold text-white transition-transform active:translate-y-px disabled:opacity-45"
                   >
                     Continue to 8-Angle Photos →
                   </button>
@@ -423,10 +433,10 @@ export const InspectorMobileStudioPage: React.FC = () => {
                           key={ang.id}
                           type="button"
                           onClick={() => toggleAngle(ang.id)}
-                          className={`flex h-16 flex-col items-center justify-center rounded-xl border-2 text-xs font-semibold transition-all active:scale-[0.97] ${
+                          className={`flex h-16 flex-col items-center justify-center rounded-md border-2 text-xs font-semibold transition-colors active:translate-y-px ${
                             done
-                              ? 'border-emerald-500 bg-emerald-50 text-emerald-800'
-                              : 'border-dashed border-slate-300 bg-white text-slate-600 hover:border-[#ea6a12]'
+                              ? 'border-[var(--success)]/30 bg-[var(--success-bg)] text-[var(--success)]'
+                              : 'border-dashed border-[var(--border-strong)] bg-[var(--bg-surface)] text-[var(--ink-secondary)] hover:border-[var(--brand)]'
                           }`}
                         >
                           {done ? (
@@ -445,23 +455,23 @@ export const InspectorMobileStudioPage: React.FC = () => {
                   </div>
 
                   {/* Resumable Chunk Progress Card (REQ-3.2, REQ-3.3) */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
-                    <div className="flex items-center justify-between text-xs font-bold">
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3.5">
+                    <div className="flex items-center justify-between text-xs font-semibold">
                       <span>Uploading {capturedAngles.length} / 8</span>
-                      <span className="font-mono-num text-slate-500">
+                      <span className="font-mono-num text-[var(--ink-muted)]">
                         {uploadedMb.toFixed(1)} / {totalMb} MB
                       </span>
                     </div>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--border-subtle)]">
                       <div
                         style={{ width: `${progressPct}%` }}
-                        className={`h-full transition-all duration-300 ${
-                          netMode === 'OFFLINE' ? 'bg-amber-500' : 'bg-emerald-600'
+                        className={`h-full transition-colors duration-300 ${
+                          netMode === 'OFFLINE' ? 'bg-[var(--warning)]' : 'bg-[var(--success)]'
                         }`}
                       />
                     </div>
                     {netMode !== '5G' && (
-                      <div className="mt-2 flex items-start gap-1.5 text-[11px] font-medium text-amber-800">
+                      <div className="mt-2 flex items-start gap-1.5 text-[11px] font-medium text-[var(--warning)]">
                         <CloudOff className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         {netMode === 'OFFLINE'
                           ? 'Offline — 5 MB chunks queued locally and will auto-resume when signal returns.'
@@ -475,7 +485,7 @@ export const InspectorMobileStudioPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={captureAllRemaining}
-                        className="w-full rounded-xl border border-[#142542] bg-white py-2.5 text-xs font-bold text-[#142542]"
+                        className="w-full rounded-md border border-[var(--ink-primary)] bg-[var(--bg-surface)] py-2.5 text-xs font-semibold text-[var(--ink-primary)]"
                       >
                         Capture Remaining {8 - capturedAngles.length} Angles (1920×1080)
                       </button>
@@ -483,7 +493,7 @@ export const InspectorMobileStudioPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleSubmitForAi}
-                      className="w-full rounded-xl bg-[#ea6a12] py-3 text-xs font-bold text-white shadow-sm transition-transform active:scale-[0.98]"
+                      className="w-full rounded-md bg-[var(--brand)] py-3 text-xs font-semibold text-white transition-transform active:translate-y-px"
                     >
                       Submit for YOLOv8 AI Analysis →
                     </button>
@@ -508,12 +518,12 @@ export const InspectorMobileStudioPage: React.FC = () => {
                     compact
                   />
 
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3.5">
                     <div className="mb-2 flex items-center justify-between">
-                      <span className="font-display text-xs font-bold text-slate-900">
+                      <span className="text-xs font-semibold text-[var(--ink-primary)]">
                         Detected Damage ({damages.filter((d) => d.confirmedByInspector !== false).length})
                       </span>
-                      <span className="font-mono-num text-[10px] font-semibold text-emerald-700">
+                      <span className="font-mono-num text-[10px] font-semibold text-[var(--success)]">
                         {analyzing ? 'Scanning GPU…' : 'Analysed in 3.1 s'}
                       </span>
                     </div>
@@ -524,35 +534,35 @@ export const InspectorMobileStudioPage: React.FC = () => {
                         return (
                           <div
                             key={d.id}
-                            className={`flex items-center justify-between rounded-xl border px-2.5 py-2 text-xs ${
+                            className={`flex items-center justify-between rounded-md border px-2.5 py-2 text-xs ${
                               rejected
-                                ? 'border-slate-200 bg-slate-50 opacity-50 line-through'
-                                : 'border-slate-200 bg-white'
+                                ? 'border-[var(--border-subtle)] bg-[var(--bg-surface-subtle)] opacity-50 line-through'
+                                : 'border-[var(--border-subtle)] bg-[var(--bg-surface)]'
                             }`}
                           >
                             <div className="min-w-0">
                               <span
-                                className={`mr-1.5 rounded px-1.5 py-0.5 font-mono-num text-[10px] font-bold ${
+                                className={`mr-1.5 rounded px-1.5 py-0.5 font-mono-num text-[10px] font-semibold ${
                                   d.type === 'DENT'
-                                    ? 'bg-red-100 text-red-700'
-                                    : 'bg-amber-100 text-amber-800'
+                                    ? 'bg-[var(--danger-bg)] text-[var(--danger)]'
+                                    : 'bg-[var(--warning-bg)] text-[var(--warning)]'
                                 }`}
                               >
                                 {d.type}
                               </span>
-                              <span className="font-medium text-slate-800">{d.panel}</span>
+                              <span className="font-medium text-[var(--ink-primary)]">{d.panel}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <span className="font-mono-num text-[11px] font-bold text-slate-600">
+                              <span className="font-mono-num text-[11px] font-semibold text-[var(--ink-secondary)]">
                                 {Math.round(d.confidence * 100)}%
                               </span>
                               <button
                                 type="button"
                                 onClick={() => toggleDamageConfirmation(d.id, !rejected ? false : true)}
-                                className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                                className="rounded-md p-1 text-[var(--ink-muted)] hover:bg-[var(--bg-surface-subtle)] hover:text-[var(--danger)]"
                                 title={rejected ? 'Restore detection' : 'Mark false positive'}
                               >
-                                {rejected ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <X className="h-3.5 w-3.5" />}
+                                {rejected ? <Check className="h-3.5 w-3.5 text-[var(--success)]" /> : <X className="h-3.5 w-3.5" />}
                               </button>
                             </div>
                           </div>
@@ -560,11 +570,11 @@ export const InspectorMobileStudioPage: React.FC = () => {
                       })}
                     </div>
 
-                    <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 pt-2 text-[11px]">
+                    <div className="mt-2.5 flex items-center justify-between border-t border-[var(--border-subtle)] pt-2 text-[11px]">
                       <button
                         type="button"
                         onClick={addManualDamage}
-                        className="inline-flex items-center gap-1 font-semibold text-[#142542] hover:text-[#ea6a12]"
+                        className="inline-flex items-center gap-1 font-semibold text-[var(--ink-primary)] hover:text-[var(--brand)]"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         Add manual damage
@@ -572,7 +582,7 @@ export const InspectorMobileStudioPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setPlateBlur((p) => !p)}
-                        className="inline-flex items-center gap-1 font-semibold text-emerald-700"
+                        className="inline-flex items-center gap-1 font-semibold text-[var(--success)]"
                       >
                         <ShieldCheck className="h-3.5 w-3.5" />
                         Plate Blur: {plateBlur ? 'ON' : 'OFF'}
@@ -581,15 +591,15 @@ export const InspectorMobileStudioPage: React.FC = () => {
                   </div>
 
                   {/* Live Recalculated Price Card */}
-                  <div className="rounded-2xl border border-slate-200 bg-white p-3.5">
-                    <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3.5">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-muted)]">
                       Suggested Price (Updates Live)
                     </div>
                     <div className="mt-0.5 flex items-baseline gap-2">
-                      <span className="font-mono-num text-2xl font-extrabold text-slate-900">
+                      <span className="font-mono-num text-2xl font-semibold text-[var(--ink-primary)]">
                         {formatMoney(liveValuation.suggestedPrice, currency, exchangeRate)}
                       </span>
-                      <span className="font-mono-num text-[11px] text-slate-500">
+                      <span className="font-mono-num text-[11px] text-[var(--ink-muted)]">
                         range {formatMoney(liveValuation.minPrice, currency, exchangeRate)} –{' '}
                         {formatMoney(liveValuation.maxPrice, currency, exchangeRate)}
                       </span>
@@ -600,7 +610,7 @@ export const InspectorMobileStudioPage: React.FC = () => {
                     type="button"
                     disabled={finalizing || analyzing}
                     onClick={handleFinalize}
-                    className="w-full rounded-xl bg-[#ea6a12] py-3 text-xs font-bold text-white shadow-sm transition-transform active:scale-[0.98] disabled:opacity-50"
+                    className="w-full rounded-md bg-[var(--brand)] py-3 text-xs font-semibold text-white transition-transform active:translate-y-px disabled:opacity-50"
                   >
                     {finalizing ? 'Finalizing & Syncing…' : 'Confirm & Finalize Report ✓'}
                   </button>
@@ -609,10 +619,10 @@ export const InspectorMobileStudioPage: React.FC = () => {
             </div>
 
             {/* Bottom Mobile Tab Bar */}
-            <div className="grid grid-cols-4 border-t border-slate-200 bg-white py-2.5 text-center text-[10px] font-semibold text-slate-400">
+            <div className="grid grid-cols-4 border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] py-2.5 text-center text-[10px] font-semibold text-[var(--ink-muted)]">
               <span>Home</span>
               <span>Vehicles</span>
-              <span className="text-[#ea6a12]">● Inspect</span>
+              <span className="text-[var(--brand)]">Inspect</span>
               <span>Profile</span>
             </div>
           </div>
@@ -620,15 +630,17 @@ export const InspectorMobileStudioPage: React.FC = () => {
 
         {/* Right Side: Real-Time Engineering Pipeline Telemetry */}
         <div className="space-y-4 lg:col-span-7">
-          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-[var(--shadow-xs)]">
-            <h2 className="font-display text-base font-bold text-[var(--ink-primary)]">
-              Live Mobile-to-Cloud Pipeline Telemetry
-            </h2>
-            <p className="mt-1 text-xs text-[var(--ink-secondary)]">
-              Demonstrates SRS requirements REQ-2.1 (ISO 3779), REQ-3.2/3.3 (5 MB chunked offline resume), REQ-4.3 (≤4 s YOLO inference), and NFR-S1 (Human-in-the-loop confirmation).
-            </p>
+          <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)]">
+            <div className="border-b border-[var(--border-subtle)] px-5 py-3">
+              <h2 className="text-sm font-semibold text-[var(--ink-primary)]">
+                {lang === 'tr' ? 'Telefondan sunucuya akış' : 'Phone-to-server pipeline'}
+              </h2>
+              <p className="mt-0.5 font-mono-num text-[11px] text-[var(--ink-muted)]">
+                REQ-2.1 · REQ-3.2/3.3 · REQ-4.3 · NFR-S1
+              </p>
+            </div>
 
-            <div className="mt-4 space-y-3 text-xs">
+            <ol className="divide-y divide-[var(--border-subtle)] text-xs">
               {[
                 {
                   title: '1. VIN Decoder Adapter (ISO 3779)',
@@ -657,17 +669,14 @@ export const InspectorMobileStudioPage: React.FC = () => {
                   detail: `Plate/face blur ${plateBlur ? 'enabled' : 'disabled'} (REQ-4.7 · TRNC Law 89/2007). Human inspector confirmation required before auction (NFR-S1).`,
                 },
               ].map((row) => (
-                <div
-                  key={row.title}
-                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-surface-subtle)] p-4"
-                >
+                <li key={row.title} className="px-5 py-4">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-[var(--ink-primary)]">{row.title}</span>
+                    <span className="font-medium text-[var(--ink-primary)]">{row.title}</span>
                     <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono-num text-[10px] font-bold ${
+                      className={`inline-flex items-center gap-1 rounded-[var(--r-sm)] border px-1.5 py-0.5 font-mono-num text-[10px] ${
                         row.ok
-                          ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
-                          : 'bg-amber-500/15 text-amber-800 dark:text-amber-300'
+                          ? 'border-[#cfe5d6] bg-[var(--success-bg)] text-[var(--success)]'
+                          : 'border-[#efdcb5] bg-[var(--warning-bg)] text-[var(--warning)]'
                       }`}
                     >
                       {row.ok && <CheckCircle2 className="h-3 w-3" />}
@@ -675,18 +684,19 @@ export const InspectorMobileStudioPage: React.FC = () => {
                     </span>
                   </div>
                   <p className="mt-1 text-[var(--ink-secondary)]">{row.detail}</p>
-                </div>
+                </li>
               ))}
-            </div>
+            </ol>
           </div>
 
           {/* Live Explainable Valuation Preview */}
-          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-6 shadow-[var(--shadow-xs)]">
+          <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-surface)] p-5">
             <div className="flex items-center justify-between">
-              <h3 className="font-display text-sm font-bold text-[var(--ink-primary)]">
-                Real-Time Valuation Breakdown ({liveValuation.modelVersion})
+              <h3 className="text-sm font-semibold text-[var(--ink-primary)]">
+                {lang === 'tr' ? 'Anlık değerleme' : 'Live valuation'}{' '}
+                <span className="font-mono-num text-[11px] font-normal text-[var(--ink-muted)]">{liveValuation.modelVersion}</span>
               </h3>
-              <span className="font-mono-num text-lg font-extrabold text-[var(--brand)]">
+              <span className="font-mono-num text-lg font-medium text-[var(--ink-primary)]">
                 {formatMoney(liveValuation.suggestedPrice, currency, exchangeRate)}
               </span>
             </div>
@@ -695,12 +705,12 @@ export const InspectorMobileStudioPage: React.FC = () => {
                 <div key={i} className="flex justify-between">
                   <span className="text-[var(--ink-secondary)]">{f.label}</span>
                   <span
-                    className={`font-mono-num font-bold ${
+                    className={`font-mono-num font-medium ${
                       f.category === 'BASE'
                         ? 'text-[var(--ink-primary)]'
                         : f.deltaGbp >= 0
-                        ? 'text-emerald-600'
-                        : 'text-red-600'
+                        ? 'text-[var(--success)]'
+                        : 'text-[var(--danger)]'
                     }`}
                   >
                     {f.category === 'BASE'

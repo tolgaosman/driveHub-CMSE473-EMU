@@ -119,5 +119,44 @@ class DriveHubSrsTest extends TestCase
         $this->assertSame('EXTENDED', $auction->status);
         $this->assertSame($prevEnd + 30, $auction->ends_at->timestamp);
     }
+
+    public function test_scheduled_auction_uses_requested_start_time(): void
+    {
+        $managerToken = $this->tokenFor('user-ayse');
+        $startsAt = Carbon::now()->addDays(2)->setTime(14, 30)->startOfMinute();
+
+        $resp = $this->withHeader('Authorization', "Bearer {$managerToken}")
+            ->postJson('/api/auctions', [
+                'vehicleId' => 'veh-qashqai',
+                'startPrice' => 9500,
+                'reservePrice' => 10900,
+                'minIncrement' => 100,
+                'durationMinutes' => 30,
+                'visibility' => 'ALL_VERIFIED',
+                'launchImmediately' => false,
+                'startsAt' => $startsAt->toISOString(),
+            ])
+            ->assertCreated()
+            ->assertJsonPath('auction.status', 'SCHEDULED');
+
+        $auction = Auction::findOrFail($resp->json('auction.id'));
+        $this->assertSame($startsAt->timestamp, $auction->starts_at->timestamp);
+        $this->assertSame($startsAt->copy()->addMinutes(30)->timestamp, $auction->ends_at->timestamp);
+    }
+
+    public function test_scheduled_auction_rejects_start_time_in_the_past(): void
+    {
+        $managerToken = $this->tokenFor('user-ayse');
+
+        $this->withHeader('Authorization', "Bearer {$managerToken}")
+            ->postJson('/api/auctions', [
+                'vehicleId' => 'veh-qashqai',
+                'startPrice' => 9500,
+                'reservePrice' => 10900,
+                'launchImmediately' => false,
+                'startsAt' => Carbon::now()->subHour()->toISOString(),
+            ])
+            ->assertStatus(422);
+    }
 }
 

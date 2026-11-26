@@ -63,14 +63,12 @@ interface AppContextValue {
   lang: Lang;
   currency: Currency;
   exchangeRate: number;
-  darkMode: boolean;
   toasts: ToastMessage[];
   setRoute: (r: RouteId) => void;
   setActiveAuctionId: (id: string) => void;
   setScheduleVehicleId: (id: string | null) => void;
   setLang: (l: Lang) => void;
   setCurrency: (c: Currency) => void;
-  toggleDarkMode: () => void;
   switchPersona: (userId: string, targetRoute?: RouteId) => Promise<void>;
   loginWithCredentials: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -95,7 +93,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [lang, setLang] = useState<Lang>('en');
   const [currency, setCurrency] = useState<Currency>('GBP');
   const [exchangeRate, setExchangeRate] = useState<number>(44.2);
-  const [darkMode, setDarkMode] = useState<boolean>(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [dataVersion, setDataVersion] = useState<number>(0);
 
@@ -144,8 +141,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-  }, [darkMode]);
+    document.documentElement.lang = lang;
+  }, [lang]);
 
   useEffect(() => {
     apiFetch<{ accounts: DemoAccountSummary[]; exchangeRateGbpToTry: number }>('/api/demo/accounts')
@@ -237,14 +234,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         lang,
         currency,
         exchangeRate,
-        darkMode,
         toasts,
         setRoute,
         setActiveAuctionId,
         setScheduleVehicleId,
         setLang,
         setCurrency,
-        toggleDarkMode: () => setDarkMode((d) => !d),
         switchPersona,
         loginWithCredentials,
         logout,
